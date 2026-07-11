@@ -61,17 +61,19 @@ function NewApplicationPage() {
     const form = new FormData(e.currentTarget);
 
     mutation.mutate({
-      firstName: String(form.get("firstName") ?? ""),
-      lastName: String(form.get("lastName") ?? ""),
-      dateOfBirth: String(form.get("dob") ?? ""),
-      gender,
-      desiredClass,
-      previousSchool: String(form.get("previousSchool") ?? ""),
-      guardianName: String(form.get("guardianName") ?? ""),
-      guardianPhone: String(form.get("guardianPhone") ?? ""),
-      guardianEmail: String(form.get("guardianEmail") ?? ""),
-      guardianRelationship: String(form.get("relationship") ?? ""),
-      notes: String(form.get("notes") ?? ""),
+      data: {
+        firstName: String(form.get("firstName") ?? ""),
+        lastName: String(form.get("lastName") ?? ""),
+        dateOfBirth: String(form.get("dob") ?? ""),
+        gender,
+        desiredClass,
+        previousSchool: String(form.get("previousSchool") ?? ""),
+        guardianName: String(form.get("guardianName") ?? ""),
+        guardianPhone: String(form.get("guardianPhone") ?? ""),
+        guardianEmail: String(form.get("guardianEmail") ?? ""),
+        guardianRelationship: String(form.get("relationship") ?? ""),
+        notes: String(form.get("notes") ?? ""),
+      },
     });
   };
 
