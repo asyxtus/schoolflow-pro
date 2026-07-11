@@ -12,13 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppTimetableRouteImport } from './routes/_app.timetable'
-import { Route as AppStudentsRouteImport } from './routes/_app.students'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppReportsRouteImport } from './routes/_app.reports'
 import { Route as AppMessagesRouteImport } from './routes/_app.messages'
 import { Route as AppClassesRouteImport } from './routes/_app.classes'
 import { Route as AppAttendanceRouteImport } from './routes/_app.attendance'
-import { Route as AppAdmissionsRouteImport } from './routes/_app.admissions'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -32,11 +30,6 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppTimetableRoute = AppTimetableRouteImport.update({
   id: '/timetable',
   path: '/timetable',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppStudentsRoute = AppStudentsRouteImport.update({
-  id: '/students',
-  path: '/students',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
@@ -64,44 +57,33 @@ const AppAttendanceRoute = AppAttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => AppRoute,
 } as any)
-const AppAdmissionsRoute = AppAdmissionsRouteImport.update({
-  id: '/admissions',
-  path: '/admissions',
-  getParentRoute: () => AppRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
-  '/admissions': typeof AppAdmissionsRoute
   '/attendance': typeof AppAttendanceRoute
   '/classes': typeof AppClassesRoute
   '/messages': typeof AppMessagesRoute
   '/reports': typeof AppReportsRoute
   '/settings': typeof AppSettingsRoute
-  '/students': typeof AppStudentsRoute
   '/timetable': typeof AppTimetableRoute
 }
 export interface FileRoutesByTo {
-  '/admissions': typeof AppAdmissionsRoute
   '/attendance': typeof AppAttendanceRoute
   '/classes': typeof AppClassesRoute
   '/messages': typeof AppMessagesRoute
   '/reports': typeof AppReportsRoute
   '/settings': typeof AppSettingsRoute
-  '/students': typeof AppStudentsRoute
   '/timetable': typeof AppTimetableRoute
   '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
-  '/_app/admissions': typeof AppAdmissionsRoute
   '/_app/attendance': typeof AppAttendanceRoute
   '/_app/classes': typeof AppClassesRoute
   '/_app/messages': typeof AppMessagesRoute
   '/_app/reports': typeof AppReportsRoute
   '/_app/settings': typeof AppSettingsRoute
-  '/_app/students': typeof AppStudentsRoute
   '/_app/timetable': typeof AppTimetableRoute
   '/_app/': typeof AppIndexRoute
 }
@@ -109,35 +91,29 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/admissions'
     | '/attendance'
     | '/classes'
     | '/messages'
     | '/reports'
     | '/settings'
-    | '/students'
     | '/timetable'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/admissions'
     | '/attendance'
     | '/classes'
     | '/messages'
     | '/reports'
     | '/settings'
-    | '/students'
     | '/timetable'
     | '/'
   id:
     | '__root__'
     | '/_app'
-    | '/_app/admissions'
     | '/_app/attendance'
     | '/_app/classes'
     | '/_app/messages'
     | '/_app/reports'
     | '/_app/settings'
-    | '/_app/students'
     | '/_app/timetable'
     | '/_app/'
   fileRoutesById: FileRoutesById
@@ -167,13 +143,6 @@ declare module '@tanstack/react-router' {
       path: '/timetable'
       fullPath: '/timetable'
       preLoaderRoute: typeof AppTimetableRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/students': {
-      id: '/_app/students'
-      path: '/students'
-      fullPath: '/students'
-      preLoaderRoute: typeof AppStudentsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/settings': {
@@ -211,36 +180,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAttendanceRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/admissions': {
-      id: '/_app/admissions'
-      path: '/admissions'
-      fullPath: '/admissions'
-      preLoaderRoute: typeof AppAdmissionsRouteImport
-      parentRoute: typeof AppRoute
-    }
   }
 }
 
 interface AppRouteChildren {
-  AppAdmissionsRoute: typeof AppAdmissionsRoute
   AppAttendanceRoute: typeof AppAttendanceRoute
   AppClassesRoute: typeof AppClassesRoute
   AppMessagesRoute: typeof AppMessagesRoute
   AppReportsRoute: typeof AppReportsRoute
   AppSettingsRoute: typeof AppSettingsRoute
-  AppStudentsRoute: typeof AppStudentsRoute
   AppTimetableRoute: typeof AppTimetableRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppAdmissionsRoute: AppAdmissionsRoute,
   AppAttendanceRoute: AppAttendanceRoute,
   AppClassesRoute: AppClassesRoute,
   AppMessagesRoute: AppMessagesRoute,
   AppReportsRoute: AppReportsRoute,
   AppSettingsRoute: AppSettingsRoute,
-  AppStudentsRoute: AppStudentsRoute,
   AppTimetableRoute: AppTimetableRoute,
   AppIndexRoute: AppIndexRoute,
 }
