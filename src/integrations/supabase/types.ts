@@ -14,16 +14,381 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      applicants: {
+        Row: {
+          class_applied_for: string | null
+          created_at: string
+          date_of_birth: string | null
+          decided_at: string | null
+          first_name: string
+          gender: Database["public"]["Enums"]["gender"] | null
+          guardian_email: string | null
+          guardian_name: string | null
+          guardian_phone: string | null
+          id: string
+          last_name: string
+          notes: string | null
+          prior_school: string | null
+          reference_no: string | null
+          school_id: string
+          score: number | null
+          stage: Database["public"]["Enums"]["admission_stage"]
+          submitted_at: string
+          updated_at: string
+        }
+        Insert: {
+          class_applied_for?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          decided_at?: string | null
+          first_name: string
+          gender?: Database["public"]["Enums"]["gender"] | null
+          guardian_email?: string | null
+          guardian_name?: string | null
+          guardian_phone?: string | null
+          id?: string
+          last_name: string
+          notes?: string | null
+          prior_school?: string | null
+          reference_no?: string | null
+          school_id: string
+          score?: number | null
+          stage?: Database["public"]["Enums"]["admission_stage"]
+          submitted_at?: string
+          updated_at?: string
+        }
+        Update: {
+          class_applied_for?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          decided_at?: string | null
+          first_name?: string
+          gender?: Database["public"]["Enums"]["gender"] | null
+          guardian_email?: string | null
+          guardian_name?: string | null
+          guardian_phone?: string | null
+          id?: string
+          last_name?: string
+          notes?: string | null
+          prior_school?: string | null
+          reference_no?: string | null
+          school_id?: string
+          score?: number | null
+          stage?: Database["public"]["Enums"]["admission_stage"]
+          submitted_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applicants_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guardians: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          is_primary: boolean
+          occupation: string | null
+          phone: string | null
+          relationship: string | null
+          school_id: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          is_primary?: boolean
+          occupation?: string | null
+          phone?: string | null
+          relationship?: string | null
+          school_id: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_primary?: boolean
+          occupation?: string | null
+          phone?: string | null
+          relationship?: string | null
+          school_id?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guardians_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guardians_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          locale: string
+          phone: string | null
+          school_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          locale?: string
+          phone?: string | null
+          school_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          locale?: string
+          phone?: string | null
+          school_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schools: {
+        Row: {
+          city: string | null
+          code: string
+          created_at: string
+          id: string
+          logo_url: string | null
+          motto: string | null
+          name: string
+          region: string | null
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          code: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          motto?: string | null
+          name: string
+          region?: string | null
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          code?: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          motto?: string | null
+          name?: string
+          region?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      students: {
+        Row: {
+          attendance_rate: number
+          class_name: string | null
+          created_at: string
+          date_of_birth: string | null
+          enrolment_date: string
+          fee_balance: number
+          first_name: string
+          gender: Database["public"]["Enums"]["gender"] | null
+          guardian_email: string | null
+          guardian_phone: string | null
+          id: string
+          last_name: string
+          matricule: string
+          notes: string | null
+          photo_url: string | null
+          school_id: string
+          section: string | null
+          status: Database["public"]["Enums"]["student_status"]
+          updated_at: string
+        }
+        Insert: {
+          attendance_rate?: number
+          class_name?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          enrolment_date?: string
+          fee_balance?: number
+          first_name: string
+          gender?: Database["public"]["Enums"]["gender"] | null
+          guardian_email?: string | null
+          guardian_phone?: string | null
+          id?: string
+          last_name: string
+          matricule: string
+          notes?: string | null
+          photo_url?: string | null
+          school_id: string
+          section?: string | null
+          status?: Database["public"]["Enums"]["student_status"]
+          updated_at?: string
+        }
+        Update: {
+          attendance_rate?: number
+          class_name?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          enrolment_date?: string
+          fee_balance?: number
+          first_name?: string
+          gender?: Database["public"]["Enums"]["gender"] | null
+          guardian_email?: string | null
+          guardian_phone?: string | null
+          id?: string
+          last_name?: string
+          matricule?: string
+          notes?: string | null
+          photo_url?: string | null
+          school_id?: string
+          section?: string | null
+          status?: Database["public"]["Enums"]["student_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          school_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          school_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          school_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_manage_school_data: {
+        Args: { _school_id: string; _user_id: string }
+        Returns: boolean
+      }
+      current_user_school_id: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role_in_school: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _school_id: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_staff_of_school: {
+        Args: { _school_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      admission_stage:
+        | "new"
+        | "review"
+        | "interview"
+        | "offer"
+        | "enrolled"
+        | "rejected"
+      app_role:
+        | "super_admin"
+        | "diocese_admin"
+        | "principal"
+        | "vice_principal"
+        | "bursar"
+        | "teacher"
+        | "secretary"
+        | "parent"
+        | "student"
+      gender: "male" | "female"
+      student_status:
+        | "active"
+        | "inactive"
+        | "graduated"
+        | "withdrawn"
+        | "suspended"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +515,34 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      admission_stage: [
+        "new",
+        "review",
+        "interview",
+        "offer",
+        "enrolled",
+        "rejected",
+      ],
+      app_role: [
+        "super_admin",
+        "diocese_admin",
+        "principal",
+        "vice_principal",
+        "bursar",
+        "teacher",
+        "secretary",
+        "parent",
+        "student",
+      ],
+      gender: ["male", "female"],
+      student_status: [
+        "active",
+        "inactive",
+        "graduated",
+        "withdrawn",
+        "suspended",
+      ],
+    },
   },
 } as const
