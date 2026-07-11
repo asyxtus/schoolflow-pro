@@ -31,7 +31,7 @@ import type { Tables } from "@/integrations/supabase/types";
 
 const studentQueryOptions = (id: string) => ({
   queryKey: ["student", id] as const,
-  queryFn: () => getStudentById({ id }),
+  queryFn: () => getStudentById({ data: { id } }),
 });
 
 export const Route = createFileRoute("/_authenticated/students/$studentId")({
