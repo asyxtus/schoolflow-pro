@@ -62,3 +62,85 @@ export const createApplicant = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+const stageSchema = z.object({
+  id: z.string().uuid(),
+  stage: z.enum(["new", "review", "interview", "offer", "enrolled", "rejected"]),
+});
+
+export const updateApplicantStage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: z.infer<typeof stageSchema>) => stageSchema.parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) throw new Error("No school assigned to this account");
+
+    const { error } = await supabase
+      .from("applicants")
+      .update({ stage: data.stage })
+      .eq("id", data.id)
+      .eq("school_id", schoolId);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+const admitSchema = z.object({
+  id: z.string().uuid(),
+  matricule: z.string().min(1),
+  className: z.string().optional(),
+});
+
+export const admitApplicant = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: z.infer<typeof admitSchema>) => admitSchema.parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) throw new Error("No school assigned to this account");
+
+    const { data: applicant, error: aErr } = await supabase
+      .from("applicants")
+      .select("*")
+      .eq("id", data.id)
+      .eq("school_id", schoolId)
+      .single();
+    if (aErr) throw aErr;
+    if (!applicant) throw new Error("Applicant not found");
+
+    const { data: student, error: sErr } = await supabase
+      .from("students")
+      .insert({
+        school_id: schoolId,
+        first_name: applicant.first_name,
+        last_name: applicant.last_name,
+        matricule: data.matricule,
+        date_of_birth: applicant.date_of_birth,
+        gender: applicant.gender,
+        class_name: data.className || applicant.class_applied_for,
+        status: "active",
+      })
+      .select("id")
+      .single();
+    if (sErr) throw sErr;
+
+    if (applicant.guardian_name && student) {
+      await supabase.from("guardians").insert({
+        school_id: schoolId,
+        student_id: student.id,
+        full_name: applicant.guardian_name,
+        phone: applicant.guardian_phone,
+        email: applicant.guardian_email,
+        is_primary: true,
+      });
+    }
+
+    const { error: uErr } = await supabase
+      .from("applicants")
+      .update({ stage: "enrolled" })
+      .eq("id", data.id)
+      .eq("school_id", schoolId);
+    if (uErr) throw uErr;
+
+    return { studentId: student!.id };
+  });
