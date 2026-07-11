@@ -1,4 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   Users,
@@ -24,6 +26,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { getCurrentSchool } from "@/lib/school.functions";
 
 const groups = [
   {
@@ -56,6 +59,16 @@ export function AppSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const isActive = (url: string) =>
     url === "/" ? currentPath === "/" : currentPath.startsWith(url);
+  const fetchSchool = useServerFn(getCurrentSchool);
+  const { data } = useQuery({
+    queryKey: ["current-school"],
+    queryFn: () => fetchSchool(),
+  });
+  const schoolName = data?.school?.name ?? "SchoolERP";
+  const schoolSub =
+    [data?.school?.city, data?.school?.region].filter(Boolean).join(", ") ||
+    data?.school?.code ||
+    "Cameroon";
 
   return (
     <Sidebar collapsible="icon">
@@ -66,9 +79,9 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-semibold tracking-tight text-sidebar-foreground">
-              SchoolERP
+              {schoolName}
             </span>
-            <span className="text-[11px] text-sidebar-foreground/60">Cameroon</span>
+            <span className="text-[11px] text-sidebar-foreground/60">{schoolSub}</span>
           </div>
         </div>
       </SidebarHeader>

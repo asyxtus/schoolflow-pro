@@ -1,5 +1,7 @@
-import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
-import { Bell, Search } from "lucide-react";
+import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Bell, LogOut, Search } from "lucide-react";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -8,6 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentSchool } from "@/lib/school.functions";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -31,6 +34,27 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   const path = useRouterState({ select: (r) => r.location.pathname });
   const crumbs = pathToCrumbs(path);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const fetchSchool = useServerFn(getCurrentSchool);
+  const { data } = useQuery({
+    queryKey: ["current-school"],
+    queryFn: () => fetchSchool(),
+  });
+  const name = data?.profile?.full_name || data?.profile?.email || "";
+  const initials = name
+    .split(/[\s@._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("") || "U";
+
+  const handleSignOut = async () => {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  };
 
   return (
     <SidebarProvider>
@@ -68,9 +92,17 @@ function AuthenticatedLayout() {
               <Button variant="ghost" size="icon" aria-label="Notifications">
                 <Bell className="h-4 w-4" />
               </Button>
-              <Avatar className="h-8 w-8">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Sign out"
+                onClick={handleSignOut}
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+              <Avatar className="h-8 w-8" title={name}>
                 <AvatarFallback className="bg-primary text-xs font-medium text-primary-foreground">
-                  AB
+                  {initials}
                 </AvatarFallback>
               </Avatar>
             </div>

@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   Users,
   UserCheck,
@@ -14,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { getCurrentSchool } from "@/lib/school.functions";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: DashboardPage,
@@ -30,11 +33,23 @@ export const Route = createFileRoute("/_authenticated/")({
 });
 
 function DashboardPage() {
+  const fetchSchool = useServerFn(getCurrentSchool);
+  const { data } = useSuspenseQuery({
+    queryKey: ["current-school"],
+    queryFn: () => fetchSchool(),
+  });
+  const school = data?.school;
+  const profile = data?.profile;
+  const displayName = profile?.full_name || profile?.email?.split("@")[0] || "there";
+  const locale = [school?.city, school?.region].filter(Boolean).join(" · ");
+  const subtitle = [school?.name, locale].filter(Boolean).join(" · ") ||
+    "Set up your school in Settings";
+
   return (
     <div className="mx-auto w-full max-w-7xl px-6 py-8">
       <PageHeader
-        title="Good morning, Sister Marie"
-        description="Sacred Heart College · Bamenda · Term 2, 2025/2026"
+        title={`Good morning, ${displayName}`}
+        description={subtitle}
         actions={
           <>
             <Button variant="outline" size="sm">
