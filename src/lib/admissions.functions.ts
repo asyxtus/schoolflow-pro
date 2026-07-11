@@ -36,7 +36,7 @@ const applicantSchema = z.object({
 
 export const createApplicant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => applicantSchema.parse(data))
+  .validator(applicantSchema)
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const schoolId = await getUserSchoolId(supabase, userId);
