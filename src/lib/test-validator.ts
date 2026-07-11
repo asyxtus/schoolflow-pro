@@ -11,4 +11,4 @@ export const testFn = createServerFn({ method: "GET" })
     return data.id + context.userId;
   });
 
-const result = testFn({ data: { id: "123e4567-e89b-12d3-a456-426614174000" } });
+const result = testFn({ id: "123e4567-e89b-12d3-a456-426614174000" });
