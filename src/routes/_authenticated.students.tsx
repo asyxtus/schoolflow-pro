@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Download, Plus, Search, UserPlus } from "lucide-react";
 import { z } from "zod";
 
@@ -24,46 +25,65 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  CLASS_OPTIONS,
-  STUDENTS,
-  formatFCFA,
-  type FeeStatus,
-  type Student,
-  type StudentStatus,
-} from "@/lib/mock/students";
+import { getStudents } from "@/lib/students.functions";
+import { formatFCFA } from "@/lib/mock/students";
+import type { Tables } from "@/integrations/supabase/types";
 
 const searchSchema = z.object({
   q: z.string().optional().default(""),
   class: z.string().optional().default("all"),
-  fees: z.enum(["all", "paid", "partial", "overdue"]).optional().default("all"),
-  status: z.enum(["all", "active", "suspended", "withdrawn", "graduated"]).optional().default("all"),
+  fees: z.enum(["all", "paid", "overdue"]).optional().default("all"),
+  status: z.enum(["all", "active", "inactive", "graduated", "withdrawn", "suspended"]).optional().default("all"),
+});
+
+const studentsQueryOptions = () => ({
+  queryKey: ["students"] as const,
+  queryFn: () => getStudents(),
 });
 
 export const Route = createFileRoute("/_authenticated/students")({
   validateSearch: searchSchema,
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(studentsQueryOptions());
+  },
   component: StudentsPage,
+  errorComponent: ({ error }) => (
+    <div className="mx-auto max-w-2xl px-6 py-16 text-center">
+      <h1 className="text-lg font-semibold text-foreground">Couldn't load students</h1>
+      <p className="mt-1 text-sm text-muted-foreground">{error.message}</p>
+    </div>
+  ),
 });
 
 function StudentsPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/students" });
+  const { data: students } = useSuspenseQuery(studentsQueryOptions());
+
+  const classOptions = useMemo(
+    () => ["all", ...Array.from(new Set((students ?? []).map((s) => s.class_name).filter(Boolean)))],
+    [students],
+  );
 
   const filtered = useMemo(() => {
     const q = search.q.trim().toLowerCase();
-    return STUDENTS.filter((s) => {
-      if (search.class !== "all" && s.className !== search.class) return false;
-      if (search.fees !== "all" && s.feeStatus !== search.fees) return false;
+    return (students ?? []).filter((s) => {
+      if (search.class !== "all" && s.class_name !== search.class) return false;
+      if (search.fees !== "all") {
+        const paid = (s.fee_balance ?? 0) === 0;
+        if (search.fees === "paid" && !paid) return false;
+        if (search.fees === "overdue" && paid) return false;
+      }
       if (search.status !== "all" && s.status !== search.status) return false;
       if (!q) return true;
       return (
-        s.firstName.toLowerCase().includes(q) ||
-        s.lastName.toLowerCase().includes(q) ||
+        s.first_name.toLowerCase().includes(q) ||
+        s.last_name.toLowerCase().includes(q) ||
         s.matricule.toLowerCase().includes(q) ||
-        s.guardianName.toLowerCase().includes(q)
+        (s.guardian_phone ?? "").toLowerCase().includes(q)
       );
     });
-  }, [search]);
+  }, [search, students]);
 
   const setSearch = (patch: Partial<z.infer<typeof searchSchema>>) =>
     navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, ...patch }) });
@@ -72,7 +92,7 @@ function StudentsPage() {
     <div className="mx-auto w-full max-w-7xl px-6 py-8">
       <PageHeader
         title="Students"
-        description={`${STUDENTS.length} enrolled learners across ${new Set(STUDENTS.map((s) => s.className)).size} classes`}
+        description={`${(students ?? []).length} enrolled learners across ${new Set((students ?? []).map((s) => s.class_name)).size} classes`}
         actions={
           <>
             <Button variant="outline" size="sm">
@@ -99,7 +119,7 @@ function StudentsPage() {
           <Select value={search.class} onValueChange={(v) => setSearch({ class: v })}>
             <SelectTrigger className="h-9 w-44"><SelectValue placeholder="Class" /></SelectTrigger>
             <SelectContent>
-              {CLASS_OPTIONS.map((c) => (
+              {classOptions.map((c) => (
                 <SelectItem key={c} value={c}>{c === "all" ? "All classes" : c}</SelectItem>
               ))}
             </SelectContent>
@@ -109,7 +129,6 @@ function StudentsPage() {
             <SelectContent>
               <SelectItem value="all">All fees</SelectItem>
               <SelectItem value="paid">Paid</SelectItem>
-              <SelectItem value="partial">Partial</SelectItem>
               <SelectItem value="overdue">Overdue</SelectItem>
             </SelectContent>
           </Select>
@@ -118,6 +137,7 @@ function StudentsPage() {
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
               <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
               <SelectItem value="suspended">Suspended</SelectItem>
               <SelectItem value="withdrawn">Withdrawn</SelectItem>
               <SelectItem value="graduated">Graduated</SelectItem>
@@ -156,7 +176,7 @@ function StudentsPage() {
         <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
           <span>
             Showing <span className="font-medium text-foreground">{filtered.length}</span> of{" "}
-            <span className="font-medium text-foreground">{STUDENTS.length}</span> students
+            <span className="font-medium text-foreground">{(students ?? []).length}</span> students
           </span>
           <Button variant="ghost" size="sm" className="text-xs">
             <Plus className="mr-1 h-3.5 w-3.5" /> Load more
@@ -167,8 +187,17 @@ function StudentsPage() {
   );
 }
 
-function StudentRow({ student }: { student: Student }) {
-  const initials = (student.firstName[0] ?? "") + (student.lastName[0] ?? "");
+type StudentRow = Tables<"students">;
+type FeeStatus = "paid" | "overdue";
+type StudentStatus = StudentRow["status"];
+
+function deriveFeeStatus(balance: number): FeeStatus {
+  return balance === 0 ? "paid" : "overdue";
+}
+
+function StudentRow({ student }: { student: StudentRow }) {
+  const initials = (student.first_name[0] ?? "") + (student.last_name[0] ?? "");
+  const feeStatus = deriveFeeStatus(student.fee_balance ?? 0);
   return (
     <TableRow className="group">
       <TableCell>
@@ -185,28 +214,29 @@ function StudentRow({ student }: { student: Student }) {
           </Avatar>
           <div className="min-w-0">
             <div className="truncate font-medium text-foreground group-hover:text-primary">
-              {student.lastName} {student.firstName}
+              {student.last_name} {student.first_name}
             </div>
             <div className="text-xs text-muted-foreground">
-              {student.gender === "M" ? "Male" : "Female"} · Born {student.dateOfBirth}
+              {student.gender === "male" ? "Male" : student.gender === "female" ? "Female" : "—"} · Born{" "}
+              {student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : "—"}
             </div>
           </div>
         </Link>
       </TableCell>
       <TableCell className="font-mono text-xs">{student.matricule}</TableCell>
       <TableCell>
-        <div className="text-sm text-foreground">{student.className}</div>
-        <div className="text-xs text-muted-foreground">{student.formMaster}</div>
+        <div className="text-sm text-foreground">{student.class_name}</div>
+        <div className="text-xs text-muted-foreground">{student.section ?? "—"}</div>
       </TableCell>
       <TableCell>
-        <div className="text-sm text-foreground">{student.guardianName}</div>
-        <div className="text-xs text-muted-foreground">{student.guardianPhone}</div>
+        <div className="text-sm text-foreground">{student.guardian_phone ?? "—"}</div>
+        <div className="text-xs text-muted-foreground">{student.guardian_email ?? ""}</div>
       </TableCell>
       <TableCell>
-        <AttendanceBadge rate={student.attendanceRate} />
+        <AttendanceBadge rate={student.attendance_rate ?? 0} />
       </TableCell>
       <TableCell>
-        <FeePill status={student.feeStatus} balance={student.feeBalance} />
+        <FeePill status={feeStatus} balance={student.fee_balance ?? 0} />
       </TableCell>
       <TableCell>
         <StatusPill status={student.status} />
@@ -217,21 +247,16 @@ function StudentRow({ student }: { student: Student }) {
 
 function AttendanceBadge({ rate }: { rate: number }) {
   const tone =
-    rate >= 95
-      ? "text-primary"
-      : rate >= 85
-        ? "text-foreground"
-        : "text-destructive";
+    rate >= 95 ? "text-primary" : rate >= 85 ? "text-foreground" : "text-destructive";
   return <span className={`text-sm font-medium ${tone}`}>{rate}%</span>;
 }
 
 function FeePill({ status, balance }: { status: FeeStatus; balance: number }) {
   const map: Record<FeeStatus, string> = {
     paid: "bg-primary/10 text-primary border-primary/20",
-    partial: "bg-accent/20 text-accent-foreground border-accent/40",
     overdue: "bg-destructive/10 text-destructive border-destructive/30",
   };
-  const label = status === "paid" ? "Paid" : status === "partial" ? "Partial" : "Overdue";
+  const label = status === "paid" ? "Paid" : "Overdue";
   return (
     <div className="flex flex-col gap-0.5">
       <Badge variant="outline" className={`w-fit ${map[status]}`}>{label}</Badge>
@@ -245,6 +270,7 @@ function FeePill({ status, balance }: { status: FeeStatus; balance: number }) {
 function StatusPill({ status }: { status: StudentStatus }) {
   const map: Record<StudentStatus, string> = {
     active: "bg-primary/10 text-primary border-primary/20",
+    inactive: "bg-muted text-muted-foreground border-border",
     suspended: "bg-destructive/10 text-destructive border-destructive/30",
     withdrawn: "bg-muted text-muted-foreground border-border",
     graduated: "bg-secondary text-secondary-foreground border-border",
