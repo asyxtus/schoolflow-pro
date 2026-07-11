@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { APPLICANTS, STAGES, type Applicant } from "@/lib/mock/admissions";
 
-export const Route = createFileRoute("/_app/admissions")({
+export const Route = createFileRoute("/_authenticated/admissions")({
   component: AdmissionsPage,
 });
 

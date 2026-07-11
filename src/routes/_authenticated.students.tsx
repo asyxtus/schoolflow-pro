@@ -40,7 +40,7 @@ const searchSchema = z.object({
   status: z.enum(["all", "active", "suspended", "withdrawn", "graduated"]).optional().default("all"),
 });
 
-export const Route = createFileRoute("/_app/students")({
+export const Route = createFileRoute("/_authenticated/students")({
   validateSearch: searchSchema,
   component: StudentsPage,
 });

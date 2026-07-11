@@ -30,7 +30,7 @@ const DESIRED_CLASSES = [
   "Upper Sixth Arts",
 ];
 
-export const Route = createFileRoute("/_app/admissions/new")({
+export const Route = createFileRoute("/_authenticated/admissions/new")({
   component: NewApplicationPage,
 });
 

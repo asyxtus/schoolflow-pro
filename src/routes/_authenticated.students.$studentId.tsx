@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/tabs";
 import { formatFCFA, getStudent } from "@/lib/mock/students";
 
-export const Route = createFileRoute("/_app/students/$studentId")({
+export const Route = createFileRoute("/_authenticated/students/$studentId")({
   loader: ({ params }) => {
     const student = getStudent(params.studentId);
     if (!student) throw notFound();
