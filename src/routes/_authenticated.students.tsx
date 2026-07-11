@@ -60,10 +60,12 @@ function StudentsPage() {
   const navigate = useNavigate({ from: "/students" });
   const { data: students } = useSuspenseQuery(studentsQueryOptions());
 
-  const classOptions = useMemo(
-    () => ["all", ...Array.from(new Set((students ?? []).map((s) => s.class_name).filter(Boolean)))],
-    [students],
-  );
+  const classOptions = useMemo(() => {
+    const classes = Array.from(
+      new Set((students ?? []).map((s) => s.class_name).filter((c): c is string => Boolean(c))),
+    );
+    return ["all", ...classes];
+  }, [students]);
 
   const filtered = useMemo(() => {
     const q = search.q.trim().toLowerCase();
