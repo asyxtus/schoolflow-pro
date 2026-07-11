@@ -25,7 +25,7 @@ const studentByIdSchema = z.object({ id: z.string().uuid() });
 
 export const getStudentById = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { id: string }) => studentByIdSchema.parse(data))
+  .inputValidator((data: { id: string }) => studentByIdSchema.parse(data))
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const schoolId = await getUserSchoolId(supabase, userId);
