@@ -1,12 +1,34 @@
+import { useState } from "react";
 import { createFileRoute, Link, Outlet, useMatchRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { FilePlus2, MoreHorizontal, UserRoundPlus } from "lucide-react";
+import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { FilePlus2, GraduationCap, MoreHorizontal, UserRoundPlus } from "lucide-react";
+import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { getApplicants } from "@/lib/admissions.functions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  getApplicants,
+  updateApplicantStage,
+  admitApplicant,
+} from "@/lib/admissions.functions";
 import type { Tables } from "@/integrations/supabase/types";
 
 const applicantsQueryOptions = () => ({
@@ -39,7 +61,20 @@ const STAGES: { id: Tables<"applicants">["stage"]; label: string; tone: string }
 function AdmissionsPage() {
   const matchRoute = useMatchRoute();
   const showChild = matchRoute({ to: "/admissions/new" });
+  const qc = useQueryClient();
   const { data: applicants } = useSuspenseQuery(applicantsQueryOptions());
+  const [admitTarget, setAdmitTarget] = useState<Tables<"applicants"> | null>(null);
+
+  const stageMutation = useMutation({
+    mutationFn: (input: { id: string; stage: Tables<"applicants">["stage"] }) =>
+      updateApplicantStage({ data: input }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["applicants"] });
+      await qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      toast.success("Stage updated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   if (showChild) return <Outlet />;
 
@@ -77,7 +112,14 @@ function AdmissionsPage() {
                 </Button>
               </div>
               <div className="flex flex-1 flex-col gap-2 rounded-lg bg-muted/30 p-2 min-h-32">
-                {cards.map((a) => <ApplicantCard key={a.id} applicant={a} />)}
+                {cards.map((a) => (
+                  <ApplicantCard
+                    key={a.id}
+                    applicant={a}
+                    onStageChange={(stage) => stageMutation.mutate({ id: a.id, stage })}
+                    onAdmit={() => setAdmitTarget(a)}
+                  />
+                ))}
                 {cards.length === 0 && (
                   <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-border py-6 text-xs text-muted-foreground">
                     Nothing here yet
@@ -88,11 +130,24 @@ function AdmissionsPage() {
           );
         })}
       </div>
+
+      <AdmitDialog
+        applicant={admitTarget}
+        onClose={() => setAdmitTarget(null)}
+      />
     </div>
   );
 }
 
-function ApplicantCard({ applicant }: { applicant: Tables<"applicants"> }) {
+function ApplicantCard({
+  applicant,
+  onStageChange,
+  onAdmit,
+}: {
+  applicant: Tables<"applicants">;
+  onStageChange: (stage: Tables<"applicants">["stage"]) => void;
+  onAdmit: () => void;
+}) {
   const fullName = `${applicant.last_name} ${applicant.first_name}`;
   return (
     <Card className="group cursor-pointer border-border/70 p-3 shadow-none transition hover:border-primary/40 hover:shadow-sm">
@@ -119,9 +174,118 @@ function ApplicantCard({ applicant }: { applicant: Tables<"applicants"> }) {
         </div>
       )}
       <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2 text-xs">
-        <span className="text-muted-foreground">{applicant.guardian_phone ?? "—"}</span>
-        <FilePlus2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary" />
+        <span className="text-muted-foreground truncate">{applicant.guardian_phone ?? "—"}</span>
+        <FilePlus2 className="h-3.5 w-3.5 text-muted-foreground" />
+      </div>
+      <div className="mt-2 flex items-center gap-1.5">
+        <Select
+          value={applicant.stage}
+          onValueChange={(v) => onStageChange(v as Tables<"applicants">["stage"])}
+        >
+          <SelectTrigger className="h-7 flex-1 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {STAGES.map((s) => (
+              <SelectItem key={s.id} value={s.id} className="text-xs">
+                {s.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {applicant.stage !== "enrolled" && applicant.stage !== "rejected" && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-xs"
+            onClick={onAdmit}
+            title="Admit as student"
+          >
+            <GraduationCap className="h-3.5 w-3.5" />
+          </Button>
+        )}
       </div>
     </Card>
+  );
+}
+
+function AdmitDialog({
+  applicant,
+  onClose,
+}: {
+  applicant: Tables<"applicants"> | null;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const [matricule, setMatricule] = useState("");
+  const [className, setClassName] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: (input: { id: string; matricule: string; className?: string }) =>
+      admitApplicant({ data: input }),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["applicants"] }),
+        qc.invalidateQueries({ queryKey: ["students"] }),
+        qc.invalidateQueries({ queryKey: ["dashboard-stats"] }),
+      ]);
+      toast.success("Applicant admitted as student");
+      setMatricule("");
+      setClassName("");
+      onClose();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog
+      open={!!applicant}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Admit {applicant?.last_name} {applicant?.first_name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Matricule *</Label>
+            <Input
+              value={matricule}
+              onChange={(e) => setMatricule(e.target.value)}
+              placeholder="e.g. SHC-2025-042"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Class</Label>
+            <Input
+              value={className}
+              onChange={(e) => setClassName(e.target.value)}
+              placeholder={applicant?.class_applied_for ?? "Form 1"}
+            />
+            <p className="text-xs text-muted-foreground">
+              Defaults to "{applicant?.class_applied_for}" if left blank.
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button
+            disabled={!matricule || mutation.isPending}
+            onClick={() =>
+              applicant &&
+              mutation.mutate({
+                id: applicant.id,
+                matricule,
+                className: className || undefined,
+              })
+            }
+          >
+            {mutation.isPending ? "Admitting…" : "Admit as student"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
