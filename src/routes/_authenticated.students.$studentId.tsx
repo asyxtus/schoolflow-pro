@@ -1,4 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   CalendarDays,
@@ -24,13 +25,18 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { formatFCFA, getStudent } from "@/lib/mock/students";
+import { getStudentById } from "@/lib/students.functions";
+import { formatFCFA } from "@/lib/mock/students";
+import type { Tables } from "@/integrations/supabase/types";
+
+const studentQueryOptions = (id: string) => ({
+  queryKey: ["student", id] as const,
+  queryFn: () => getStudentById({ id }),
+});
 
 export const Route = createFileRoute("/_authenticated/students/$studentId")({
-  loader: ({ params }) => {
-    const student = getStudent(params.studentId);
-    if (!student) throw notFound();
-    return { student };
+  loader: async ({ context, params }) => {
+    await context.queryClient.ensureQueryData(studentQueryOptions(params.studentId));
   },
   component: StudentProfile,
   notFoundComponent: () => (
@@ -53,11 +59,13 @@ export const Route = createFileRoute("/_authenticated/students/$studentId")({
 });
 
 function StudentProfile() {
-  const { student } = Route.useLoaderData();
-  const initials = student.firstName[0] + student.lastName[0];
+  const { studentId } = Route.useParams();
+  const { data: student } = useSuspenseQuery(studentQueryOptions(studentId));
+  const initials = student.first_name[0] + student.last_name[0];
   const feeTotal = 250_000;
-  const feePaid = feeTotal - student.feeBalance;
+  const feePaid = Math.max(0, feeTotal - (student.fee_balance ?? 0));
   const feePercent = Math.round((feePaid / feeTotal) * 100);
+  const primaryGuardian = student.guardians?.find((g) => g.is_primary) ?? student.guardians?.[0];
 
   return (
     <div className="mx-auto w-full max-w-7xl px-6 py-8">
@@ -68,8 +76,8 @@ function StudentProfile() {
       </div>
 
       <PageHeader
-        title={`${student.lastName} ${student.firstName}`}
-        description={`${student.matricule} · ${student.className}`}
+        title={`${student.last_name} ${student.first_name}`}
+        description={`${student.matricule} · ${student.class_name ?? "—"}`}
         actions={
           <>
             <Button variant="outline" size="sm">
@@ -87,37 +95,49 @@ function StudentProfile() {
           <div className="h-2 bg-primary" />
           <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
             <Avatar className="h-20 w-20">
-              <AvatarFallback className="bg-primary text-primary-foreground text-lg font-semibold">
+              <AvatarFallback className="bg-primary text-lg font-semibold text-primary-foreground">
                 {initials}
               </AvatarFallback>
             </Avatar>
             <div>
               <div className="text-base font-semibold text-foreground">
-                {student.lastName} {student.firstName}
+                {student.last_name} {student.first_name}
               </div>
-              <div className="text-xs text-muted-foreground">Enrolled {student.enrolledOn}</div>
+              <div className="text-xs text-muted-foreground">
+                Enrolled {student.enrolment_date ? new Date(student.enrolment_date).toLocaleDateString() : "—"}
+              </div>
             </div>
-            <Badge variant="outline" className="capitalize bg-primary/10 text-primary border-primary/20">
+            <Badge variant="outline" className="border-primary/20 bg-primary/10 capitalize text-primary">
               {student.status}
             </Badge>
             <Separator />
             <dl className="w-full space-y-2 text-left text-sm">
-              <InfoRow icon={GraduationCap} label="Class" value={student.className} />
-              <InfoRow icon={CalendarDays} label="Date of birth" value={student.dateOfBirth} />
-              <InfoRow icon={MapPin} label="Address" value={student.address} />
-              <InfoRow icon={ShieldAlert} label="Blood group" value={student.bloodGroup ?? "—"} />
+              <InfoRow icon={GraduationCap} label="Class" value={student.class_name ?? "—"} />
+              <InfoRow
+                icon={CalendarDays}
+                label="Date of birth"
+                value={
+                  student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : "—"
+                }
+              />
+              <InfoRow icon={MapPin} label="Section" value={student.section ?? "—"} />
+              <InfoRow icon={ShieldAlert} label="Notes" value={student.notes ?? "—"} />
             </dl>
           </CardContent>
         </Card>
 
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-3">
-            <MetricCard label="Attendance (term)" value={`${student.attendanceRate}%`} tone="primary" />
+            <MetricCard
+              label="Attendance (term)"
+              value={`${student.attendance_rate ?? 0}%`}
+              tone="primary"
+            />
             <MetricCard label="Discipline flags" value="0" tone="muted" />
             <MetricCard
               label="Fee balance"
-              value={student.feeBalance === 0 ? "Cleared" : formatFCFA(student.feeBalance)}
-              tone={student.feeBalance === 0 ? "primary" : "warning"}
+              value={(student.fee_balance ?? 0) === 0 ? "Cleared" : formatFCFA(student.fee_balance ?? 0)}
+              tone={(student.fee_balance ?? 0) === 0 ? "primary" : "warning"}
             />
           </div>
 
@@ -134,9 +154,9 @@ function StudentProfile() {
               <Card>
                 <CardHeader><CardTitle className="text-sm">Academic snapshot</CardTitle></CardHeader>
                 <CardContent className="space-y-4 text-sm">
-                  <Row label="Form master" value={student.formMaster} />
-                  <Row label="Religion" value={student.religion ?? "—"} />
-                  <Row label="Emergency contact" value={student.emergencyContact ?? "—"} />
+                  <Row label="Section" value={student.section ?? "—"} />
+                  <Row label="Gender" value={student.gender === "male" ? "Male" : student.gender === "female" ? "Female" : "—"} />
+                  <Row label="Emergency contact" value={student.guardian_phone ?? "—"} />
                   <Row label="Sequence 1 average" value="14.2 / 20" />
                   <Row label="Class rank" value="8th of 42" />
                 </CardContent>
@@ -145,30 +165,66 @@ function StudentProfile() {
 
             <TabsContent value="guardians" className="mt-4">
               <Card>
-                <CardHeader><CardTitle className="text-sm">Primary guardian</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-sm">Guardians</CardTitle></CardHeader>
                 <CardContent className="space-y-3 text-sm">
-                  <Row label="Name" value={student.guardianName} />
-                  <Row
-                    label="Phone"
-                    value={
-                      <span className="inline-flex items-center gap-1.5">
-                        <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                        {student.guardianPhone}
-                      </span>
-                    }
-                  />
-                  {student.guardianEmail && (
-                    <Row
-                      label="Email"
-                      value={
-                        <span className="inline-flex items-center gap-1.5">
-                          <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                          {student.guardianEmail}
-                        </span>
-                      }
-                    />
+                  {student.guardians && student.guardians.length > 0 ? (
+                    student.guardians.map((g) => (
+                      <div key={g.id} className="rounded-md border border-border p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-foreground">{g.full_name}</span>
+                          {g.is_primary && (
+                            <Badge variant="outline" className="text-xs">Primary</Badge>
+                          )}
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground capitalize">
+                          {g.relationship ?? "Guardian"}
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          {g.phone && (
+                            <div className="flex items-center gap-1.5 text-sm">
+                              <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                              {g.phone}
+                            </div>
+                          )}
+                          {g.email && (
+                            <div className="flex items-center gap-1.5 text-sm">
+                              <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                              {g.email}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : primaryGuardian ? (
+                    <>
+                      <Row label="Name" value={primaryGuardian.full_name} />
+                      <Row
+                        label="Phone"
+                        value={
+                          <span className="inline-flex items-center gap-1.5">
+                            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                            {primaryGuardian.phone ?? "—"}
+                          </span>
+                        }
+                      />
+                      {primaryGuardian.email && (
+                        <Row
+                          label="Email"
+                          value={
+                            <span className="inline-flex items-center gap-1.5">
+                              <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                              {primaryGuardian.email}
+                            </span>
+                          }
+                        />
+                      )}
+                      <Row label="Relationship" value={primaryGuardian.relationship ?? "—"} />
+                    </>
+                  ) : (
+                    <div className="py-6 text-center text-sm text-muted-foreground">
+                      No guardian records on file.
+                    </div>
                   )}
-                  <Row label="Address" value={student.address} />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -206,7 +262,7 @@ function StudentProfile() {
                   <Row label="Days present" value="58" />
                   <Row label="Days absent" value="4" />
                   <Row label="Late arrivals" value="2" />
-                  <Row label="Attendance rate" value={`${student.attendanceRate}%`} />
+                  <Row label="Attendance rate" value={`${student.attendance_rate ?? 0}%`} />
                 </CardContent>
               </Card>
             </TabsContent>

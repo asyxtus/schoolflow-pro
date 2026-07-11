@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { createApplicant } from "@/lib/admissions.functions";
 
 const DESIRED_CLASSES = [
   "Form 1",
@@ -36,17 +38,41 @@ export const Route = createFileRoute("/_authenticated/admissions/new")({
 
 function NewApplicationPage() {
   const navigate = useNavigate();
-  const [submitting, setSubmitting] = useState(false);
+  const queryClient = useQueryClient();
+  const [gender, setGender] = useState<"male" | "female">("male");
+  const [desiredClass, setDesiredClass] = useState(DESIRED_CLASSES[0]);
 
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setTimeout(() => {
+  const mutation = useMutation({
+    mutationFn: createApplicant,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["applicants"] });
       toast.success("Application submitted", {
         description: "The applicant has been added to the New enquiry column.",
       });
       navigate({ to: "/admissions" });
-    }, 500);
+    },
+    onError: (error) => {
+      toast.error("Submission failed", { description: error.message });
+    },
+  });
+
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+
+    mutation.mutate({
+      firstName: String(form.get("firstName") ?? ""),
+      lastName: String(form.get("lastName") ?? ""),
+      dateOfBirth: String(form.get("dob") ?? ""),
+      gender,
+      desiredClass,
+      previousSchool: String(form.get("previousSchool") ?? ""),
+      guardianName: String(form.get("guardianName") ?? ""),
+      guardianPhone: String(form.get("guardianPhone") ?? ""),
+      guardianEmail: String(form.get("guardianEmail") ?? ""),
+      guardianRelationship: String(form.get("relationship") ?? ""),
+      notes: String(form.get("notes") ?? ""),
+    });
   };
 
   return (
@@ -69,22 +95,26 @@ function NewApplicationPage() {
           <div className="h-1 bg-primary" />
           <CardHeader className="pb-3"><CardTitle className="text-sm">Applicant</CardTitle></CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
-            <Field id="firstName" label="First name" required />
-            <Field id="lastName" label="Last name" required />
-            <Field id="dob" label="Date of birth" type="date" required />
+            <Field id="firstName" name="firstName" label="First name" required />
+            <Field id="lastName" name="lastName" label="Last name" required />
+            <Field id="dob" name="dob" label="Date of birth" type="date" />
             <div className="space-y-2">
               <Label>Gender</Label>
-              <RadioGroup defaultValue="M" className="flex gap-4 pt-1">
+              <RadioGroup
+                value={gender}
+                onValueChange={(v) => setGender(v as "male" | "female")}
+                className="flex gap-4 pt-1"
+              >
                 <label className="flex items-center gap-2 text-sm">
-                  <RadioGroupItem value="M" /> Male
+                  <RadioGroupItem value="male" /> Male
                 </label>
                 <label className="flex items-center gap-2 text-sm">
-                  <RadioGroupItem value="F" /> Female
+                  <RadioGroupItem value="female" /> Female
                 </label>
               </RadioGroup>
             </div>
-            <Field id="nationality" label="Nationality" defaultValue="Cameroonian" />
-            <Field id="religion" label="Religion" />
+            <Field id="nationality" name="nationality" label="Nationality" defaultValue="Cameroonian" />
+            <Field id="religion" name="religion" label="Religion" />
           </CardContent>
         </Card>
 
@@ -94,7 +124,7 @@ function NewApplicationPage() {
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="desiredClass">Desired class</Label>
-              <Select defaultValue={DESIRED_CLASSES[0]}>
+              <Select value={desiredClass} onValueChange={setDesiredClass}>
                 <SelectTrigger id="desiredClass"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {DESIRED_CLASSES.map((c) => (
@@ -103,9 +133,9 @@ function NewApplicationPage() {
                 </SelectContent>
               </Select>
             </div>
-            <Field id="previousSchool" label="Previous school" required />
-            <Field id="lastClass" label="Last class attended" />
-            <Field id="lastAverage" label="Last term average (/20)" type="number" />
+            <Field id="previousSchool" name="previousSchool" label="Previous school" />
+            <Field id="lastClass" name="lastClass" label="Last class attended" />
+            <Field id="lastAverage" name="lastAverage" label="Last term average (/20)" type="number" />
           </CardContent>
         </Card>
 
@@ -113,13 +143,13 @@ function NewApplicationPage() {
           <div className="h-1" style={{ background: "hsl(var(--sidebar-primary-foreground))" }} />
           <CardHeader className="pb-3"><CardTitle className="text-sm">Guardian</CardTitle></CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
-            <Field id="guardianName" label="Full name" required />
-            <Field id="relationship" label="Relationship" placeholder="Father, Mother, Uncle…" />
-            <Field id="guardianPhone" label="Phone" placeholder="+237 6XX XXX XXX" required />
-            <Field id="guardianEmail" label="Email" type="email" />
+            <Field id="guardianName" name="guardianName" label="Full name" required />
+            <Field id="relationship" name="relationship" label="Relationship" placeholder="Father, Mother, Uncle…" />
+            <Field id="guardianPhone" name="guardianPhone" label="Phone" placeholder="+237 6XX XXX XXX" required />
+            <Field id="guardianEmail" name="guardianEmail" label="Email" type="email" />
             <div className="sm:col-span-2 space-y-2">
               <Label htmlFor="address">Home address</Label>
-              <Textarea id="address" rows={2} />
+              <Textarea id="address" name="address" rows={2} />
             </div>
           </CardContent>
         </Card>
@@ -137,7 +167,7 @@ function NewApplicationPage() {
         <Card>
           <CardHeader className="pb-3"><CardTitle className="text-sm">Notes for admissions team</CardTitle></CardHeader>
           <CardContent>
-            <Textarea rows={3} placeholder="Anything the interviewer should know…" />
+            <Textarea name="notes" rows={3} placeholder="Anything the interviewer should know…" />
           </CardContent>
         </Card>
 
@@ -145,8 +175,8 @@ function NewApplicationPage() {
           <Button asChild type="button" variant="outline">
             <Link to="/admissions">Cancel</Link>
           </Button>
-          <Button type="submit" disabled={submitting}>
-            {submitting ? "Submitting…" : "Submit application"}
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? "Submitting…" : "Submit application"}
           </Button>
         </div>
       </form>
@@ -156,6 +186,7 @@ function NewApplicationPage() {
 
 function Field({
   id,
+  name,
   label,
   required,
   type = "text",
@@ -163,6 +194,7 @@ function Field({
   defaultValue,
 }: {
   id: string;
+  name: string;
   label: string;
   required?: boolean;
   type?: string;
@@ -175,7 +207,7 @@ function Field({
         {label}
         {required && <span className="ml-0.5 text-destructive">*</span>}
       </Label>
-      <Input id={id} type={type} placeholder={placeholder} defaultValue={defaultValue} required={required} />
+      <Input id={id} name={name} type={type} placeholder={placeholder} defaultValue={defaultValue} required={required} />
     </div>
   );
 }
