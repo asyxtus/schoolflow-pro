@@ -66,7 +66,7 @@ function StudentsPage() {
   }, [search]);
 
   const setSearch = (patch: Partial<z.infer<typeof searchSchema>>) =>
-    navigate({ search: (prev) => ({ ...prev, ...patch }) });
+    navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, ...patch }) });
 
   return (
     <div className="mx-auto w-full max-w-7xl px-6 py-8">
