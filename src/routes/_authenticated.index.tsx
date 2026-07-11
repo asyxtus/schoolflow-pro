@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 
-export const Route = createFileRoute("/_app/")({
+export const Route = createFileRoute("/_authenticated/")({
   component: DashboardPage,
   head: () => ({
     meta: [

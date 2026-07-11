@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ModulePlaceholder } from "@/components/module-placeholder";
 
-export const Route = createFileRoute("/_app/settings")({
+export const Route = createFileRoute("/_authenticated/settings")({
   component: () => (
     <ModulePlaceholder
       title="Settings"

@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, Link, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { Bell, Search } from "lucide-react";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -7,12 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute("/_app")({
-  component: AppLayout,
+export const Route = createFileRoute("/_authenticated")({
+  ssr: false,
+  beforeLoad: async () => {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) throw redirect({ to: "/auth" });
+    return { user: data.user };
+  },
+  component: AuthenticatedLayout,
 });
 
-function AppLayout() {
+function AuthenticatedLayout() {
   const path = useRouterState({ select: (r) => r.location.pathname });
   const crumbs = pathToCrumbs(path);
 
@@ -46,14 +53,14 @@ function AppLayout() {
                 <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search students, staff…"
-                  className="h-9 w-64 pl-8 bg-secondary/60 border-transparent focus-visible:bg-background"
+                  className="h-9 w-64 border-transparent bg-secondary/60 pl-8 focus-visible:bg-background"
                 />
               </div>
               <Button variant="ghost" size="icon" aria-label="Notifications">
                 <Bell className="h-4 w-4" />
               </Button>
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground text-xs font-medium">
+                <AvatarFallback className="bg-primary text-xs font-medium text-primary-foreground">
                   AB
                 </AvatarFallback>
               </Avatar>

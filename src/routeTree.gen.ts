@@ -9,124 +9,136 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AppRouteImport } from './routes/_app'
-import { Route as AppIndexRouteImport } from './routes/_app.index'
-import { Route as AppTimetableRouteImport } from './routes/_app.timetable'
-import { Route as AppStudentsRouteImport } from './routes/_app.students'
-import { Route as AppSettingsRouteImport } from './routes/_app.settings'
-import { Route as AppReportsRouteImport } from './routes/_app.reports'
-import { Route as AppMessagesRouteImport } from './routes/_app.messages'
-import { Route as AppClassesRouteImport } from './routes/_app.classes'
-import { Route as AppAttendanceRouteImport } from './routes/_app.attendance'
-import { Route as AppAdmissionsRouteImport } from './routes/_app.admissions'
-import { Route as AppStudentsStudentIdRouteImport } from './routes/_app.students.$studentId'
-import { Route as AppAdmissionsNewRouteImport } from './routes/_app.admissions.new'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
+import { Route as AuthenticatedTimetableRouteImport } from './routes/_authenticated.timetable'
+import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated.students'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated.reports'
+import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated.messages'
+import { Route as AuthenticatedClassesRouteImport } from './routes/_authenticated.classes'
+import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated.attendance'
+import { Route as AuthenticatedAdmissionsRouteImport } from './routes/_authenticated.admissions'
+import { Route as AuthenticatedStudentsStudentIdRouteImport } from './routes/_authenticated.students.$studentId'
+import { Route as AuthenticatedAdmissionsNewRouteImport } from './routes/_authenticated.admissions.new'
 
-const AppRoute = AppRouteImport.update({
-  id: '/_app',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppIndexRoute = AppIndexRouteImport.update({
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AppRoute,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AppTimetableRoute = AppTimetableRouteImport.update({
+const AuthenticatedTimetableRoute = AuthenticatedTimetableRouteImport.update({
   id: '/timetable',
   path: '/timetable',
-  getParentRoute: () => AppRoute,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AppStudentsRoute = AppStudentsRouteImport.update({
+const AuthenticatedStudentsRoute = AuthenticatedStudentsRouteImport.update({
   id: '/students',
   path: '/students',
-  getParentRoute: () => AppRoute,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AppSettingsRoute = AppSettingsRouteImport.update({
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => AppRoute,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AppReportsRoute = AppReportsRouteImport.update({
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
-  getParentRoute: () => AppRoute,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AppMessagesRoute = AppMessagesRouteImport.update({
+const AuthenticatedMessagesRoute = AuthenticatedMessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
-  getParentRoute: () => AppRoute,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AppClassesRoute = AppClassesRouteImport.update({
+const AuthenticatedClassesRoute = AuthenticatedClassesRouteImport.update({
   id: '/classes',
   path: '/classes',
-  getParentRoute: () => AppRoute,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AppAttendanceRoute = AppAttendanceRouteImport.update({
+const AuthenticatedAttendanceRoute = AuthenticatedAttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
-  getParentRoute: () => AppRoute,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AppAdmissionsRoute = AppAdmissionsRouteImport.update({
+const AuthenticatedAdmissionsRoute = AuthenticatedAdmissionsRouteImport.update({
   id: '/admissions',
   path: '/admissions',
-  getParentRoute: () => AppRoute,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AppStudentsStudentIdRoute = AppStudentsStudentIdRouteImport.update({
-  id: '/$studentId',
-  path: '/$studentId',
-  getParentRoute: () => AppStudentsRoute,
-} as any)
-const AppAdmissionsNewRoute = AppAdmissionsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AppAdmissionsRoute,
-} as any)
+const AuthenticatedStudentsStudentIdRoute =
+  AuthenticatedStudentsStudentIdRouteImport.update({
+    id: '/$studentId',
+    path: '/$studentId',
+    getParentRoute: () => AuthenticatedStudentsRoute,
+  } as any)
+const AuthenticatedAdmissionsNewRoute =
+  AuthenticatedAdmissionsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedAdmissionsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AppIndexRoute
-  '/admissions': typeof AppAdmissionsRouteWithChildren
-  '/attendance': typeof AppAttendanceRoute
-  '/classes': typeof AppClassesRoute
-  '/messages': typeof AppMessagesRoute
-  '/reports': typeof AppReportsRoute
-  '/settings': typeof AppSettingsRoute
-  '/students': typeof AppStudentsRouteWithChildren
-  '/timetable': typeof AppTimetableRoute
-  '/admissions/new': typeof AppAdmissionsNewRoute
-  '/students/$studentId': typeof AppStudentsStudentIdRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/auth': typeof AuthRoute
+  '/admissions': typeof AuthenticatedAdmissionsRouteWithChildren
+  '/attendance': typeof AuthenticatedAttendanceRoute
+  '/classes': typeof AuthenticatedClassesRoute
+  '/messages': typeof AuthenticatedMessagesRoute
+  '/reports': typeof AuthenticatedReportsRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/students': typeof AuthenticatedStudentsRouteWithChildren
+  '/timetable': typeof AuthenticatedTimetableRoute
+  '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
 }
 export interface FileRoutesByTo {
-  '/admissions': typeof AppAdmissionsRouteWithChildren
-  '/attendance': typeof AppAttendanceRoute
-  '/classes': typeof AppClassesRoute
-  '/messages': typeof AppMessagesRoute
-  '/reports': typeof AppReportsRoute
-  '/settings': typeof AppSettingsRoute
-  '/students': typeof AppStudentsRouteWithChildren
-  '/timetable': typeof AppTimetableRoute
-  '/': typeof AppIndexRoute
-  '/admissions/new': typeof AppAdmissionsNewRoute
-  '/students/$studentId': typeof AppStudentsStudentIdRoute
+  '/auth': typeof AuthRoute
+  '/admissions': typeof AuthenticatedAdmissionsRouteWithChildren
+  '/attendance': typeof AuthenticatedAttendanceRoute
+  '/classes': typeof AuthenticatedClassesRoute
+  '/messages': typeof AuthenticatedMessagesRoute
+  '/reports': typeof AuthenticatedReportsRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/students': typeof AuthenticatedStudentsRouteWithChildren
+  '/timetable': typeof AuthenticatedTimetableRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_app': typeof AppRouteWithChildren
-  '/_app/admissions': typeof AppAdmissionsRouteWithChildren
-  '/_app/attendance': typeof AppAttendanceRoute
-  '/_app/classes': typeof AppClassesRoute
-  '/_app/messages': typeof AppMessagesRoute
-  '/_app/reports': typeof AppReportsRoute
-  '/_app/settings': typeof AppSettingsRoute
-  '/_app/students': typeof AppStudentsRouteWithChildren
-  '/_app/timetable': typeof AppTimetableRoute
-  '/_app/': typeof AppIndexRoute
-  '/_app/admissions/new': typeof AppAdmissionsNewRoute
-  '/_app/students/$studentId': typeof AppStudentsStudentIdRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/admissions': typeof AuthenticatedAdmissionsRouteWithChildren
+  '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
+  '/_authenticated/classes': typeof AuthenticatedClassesRoute
+  '/_authenticated/messages': typeof AuthenticatedMessagesRoute
+  '/_authenticated/reports': typeof AuthenticatedReportsRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
+  '/_authenticated/timetable': typeof AuthenticatedTimetableRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/_authenticated/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/admissions'
     | '/attendance'
     | '/classes'
@@ -139,6 +151,7 @@ export interface FileRouteTypes {
     | '/students/$studentId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/auth'
     | '/admissions'
     | '/attendance'
     | '/classes'
@@ -152,166 +165,190 @@ export interface FileRouteTypes {
     | '/students/$studentId'
   id:
     | '__root__'
-    | '/_app'
-    | '/_app/admissions'
-    | '/_app/attendance'
-    | '/_app/classes'
-    | '/_app/messages'
-    | '/_app/reports'
-    | '/_app/settings'
-    | '/_app/students'
-    | '/_app/timetable'
-    | '/_app/'
-    | '/_app/admissions/new'
-    | '/_app/students/$studentId'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/admissions'
+    | '/_authenticated/attendance'
+    | '/_authenticated/classes'
+    | '/_authenticated/messages'
+    | '/_authenticated/reports'
+    | '/_authenticated/settings'
+    | '/_authenticated/students'
+    | '/_authenticated/timetable'
+    | '/_authenticated/'
+    | '/_authenticated/admissions/new'
+    | '/_authenticated/students/$studentId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AppRoute: typeof AppRouteWithChildren
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_app': {
-      id: '/_app'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AppRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/': {
-      id: '/_app/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof AppIndexRouteImport
-      parentRoute: typeof AppRoute
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_app/timetable': {
-      id: '/_app/timetable'
+    '/_authenticated/timetable': {
+      id: '/_authenticated/timetable'
       path: '/timetable'
       fullPath: '/timetable'
-      preLoaderRoute: typeof AppTimetableRouteImport
-      parentRoute: typeof AppRoute
+      preLoaderRoute: typeof AuthenticatedTimetableRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_app/students': {
-      id: '/_app/students'
+    '/_authenticated/students': {
+      id: '/_authenticated/students'
       path: '/students'
       fullPath: '/students'
-      preLoaderRoute: typeof AppStudentsRouteImport
-      parentRoute: typeof AppRoute
+      preLoaderRoute: typeof AuthenticatedStudentsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_app/settings': {
-      id: '/_app/settings'
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
       path: '/settings'
       fullPath: '/settings'
-      preLoaderRoute: typeof AppSettingsRouteImport
-      parentRoute: typeof AppRoute
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_app/reports': {
-      id: '/_app/reports'
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
       path: '/reports'
       fullPath: '/reports'
-      preLoaderRoute: typeof AppReportsRouteImport
-      parentRoute: typeof AppRoute
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_app/messages': {
-      id: '/_app/messages'
+    '/_authenticated/messages': {
+      id: '/_authenticated/messages'
       path: '/messages'
       fullPath: '/messages'
-      preLoaderRoute: typeof AppMessagesRouteImport
-      parentRoute: typeof AppRoute
+      preLoaderRoute: typeof AuthenticatedMessagesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_app/classes': {
-      id: '/_app/classes'
+    '/_authenticated/classes': {
+      id: '/_authenticated/classes'
       path: '/classes'
       fullPath: '/classes'
-      preLoaderRoute: typeof AppClassesRouteImport
-      parentRoute: typeof AppRoute
+      preLoaderRoute: typeof AuthenticatedClassesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_app/attendance': {
-      id: '/_app/attendance'
+    '/_authenticated/attendance': {
+      id: '/_authenticated/attendance'
       path: '/attendance'
       fullPath: '/attendance'
-      preLoaderRoute: typeof AppAttendanceRouteImport
-      parentRoute: typeof AppRoute
+      preLoaderRoute: typeof AuthenticatedAttendanceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_app/admissions': {
-      id: '/_app/admissions'
+    '/_authenticated/admissions': {
+      id: '/_authenticated/admissions'
       path: '/admissions'
       fullPath: '/admissions'
-      preLoaderRoute: typeof AppAdmissionsRouteImport
-      parentRoute: typeof AppRoute
+      preLoaderRoute: typeof AuthenticatedAdmissionsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_app/students/$studentId': {
-      id: '/_app/students/$studentId'
+    '/_authenticated/students/$studentId': {
+      id: '/_authenticated/students/$studentId'
       path: '/$studentId'
       fullPath: '/students/$studentId'
-      preLoaderRoute: typeof AppStudentsStudentIdRouteImport
-      parentRoute: typeof AppStudentsRoute
+      preLoaderRoute: typeof AuthenticatedStudentsStudentIdRouteImport
+      parentRoute: typeof AuthenticatedStudentsRoute
     }
-    '/_app/admissions/new': {
-      id: '/_app/admissions/new'
+    '/_authenticated/admissions/new': {
+      id: '/_authenticated/admissions/new'
       path: '/new'
       fullPath: '/admissions/new'
-      preLoaderRoute: typeof AppAdmissionsNewRouteImport
-      parentRoute: typeof AppAdmissionsRoute
+      preLoaderRoute: typeof AuthenticatedAdmissionsNewRouteImport
+      parentRoute: typeof AuthenticatedAdmissionsRoute
     }
   }
 }
 
-interface AppAdmissionsRouteChildren {
-  AppAdmissionsNewRoute: typeof AppAdmissionsNewRoute
+interface AuthenticatedAdmissionsRouteChildren {
+  AuthenticatedAdmissionsNewRoute: typeof AuthenticatedAdmissionsNewRoute
 }
 
-const AppAdmissionsRouteChildren: AppAdmissionsRouteChildren = {
-  AppAdmissionsNewRoute: AppAdmissionsNewRoute,
+const AuthenticatedAdmissionsRouteChildren: AuthenticatedAdmissionsRouteChildren =
+  {
+    AuthenticatedAdmissionsNewRoute: AuthenticatedAdmissionsNewRoute,
+  }
+
+const AuthenticatedAdmissionsRouteWithChildren =
+  AuthenticatedAdmissionsRoute._addFileChildren(
+    AuthenticatedAdmissionsRouteChildren,
+  )
+
+interface AuthenticatedStudentsRouteChildren {
+  AuthenticatedStudentsStudentIdRoute: typeof AuthenticatedStudentsStudentIdRoute
 }
 
-const AppAdmissionsRouteWithChildren = AppAdmissionsRoute._addFileChildren(
-  AppAdmissionsRouteChildren,
-)
-
-interface AppStudentsRouteChildren {
-  AppStudentsStudentIdRoute: typeof AppStudentsStudentIdRoute
+const AuthenticatedStudentsRouteChildren: AuthenticatedStudentsRouteChildren = {
+  AuthenticatedStudentsStudentIdRoute: AuthenticatedStudentsStudentIdRoute,
 }
 
-const AppStudentsRouteChildren: AppStudentsRouteChildren = {
-  AppStudentsStudentIdRoute: AppStudentsStudentIdRoute,
+const AuthenticatedStudentsRouteWithChildren =
+  AuthenticatedStudentsRoute._addFileChildren(
+    AuthenticatedStudentsRouteChildren,
+  )
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdmissionsRoute: typeof AuthenticatedAdmissionsRouteWithChildren
+  AuthenticatedAttendanceRoute: typeof AuthenticatedAttendanceRoute
+  AuthenticatedClassesRoute: typeof AuthenticatedClassesRoute
+  AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
+  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
+  AuthenticatedTimetableRoute: typeof AuthenticatedTimetableRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
-const AppStudentsRouteWithChildren = AppStudentsRoute._addFileChildren(
-  AppStudentsRouteChildren,
-)
-
-interface AppRouteChildren {
-  AppAdmissionsRoute: typeof AppAdmissionsRouteWithChildren
-  AppAttendanceRoute: typeof AppAttendanceRoute
-  AppClassesRoute: typeof AppClassesRoute
-  AppMessagesRoute: typeof AppMessagesRoute
-  AppReportsRoute: typeof AppReportsRoute
-  AppSettingsRoute: typeof AppSettingsRoute
-  AppStudentsRoute: typeof AppStudentsRouteWithChildren
-  AppTimetableRoute: typeof AppTimetableRoute
-  AppIndexRoute: typeof AppIndexRoute
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdmissionsRoute: AuthenticatedAdmissionsRouteWithChildren,
+  AuthenticatedAttendanceRoute: AuthenticatedAttendanceRoute,
+  AuthenticatedClassesRoute: AuthenticatedClassesRoute,
+  AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
+  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
+  AuthenticatedTimetableRoute: AuthenticatedTimetableRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 
-const AppRouteChildren: AppRouteChildren = {
-  AppAdmissionsRoute: AppAdmissionsRouteWithChildren,
-  AppAttendanceRoute: AppAttendanceRoute,
-  AppClassesRoute: AppClassesRoute,
-  AppMessagesRoute: AppMessagesRoute,
-  AppReportsRoute: AppReportsRoute,
-  AppSettingsRoute: AppSettingsRoute,
-  AppStudentsRoute: AppStudentsRouteWithChildren,
-  AppTimetableRoute: AppTimetableRoute,
-  AppIndexRoute: AppIndexRoute,
-}
-
-const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  AppRoute: AppRouteWithChildren,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
