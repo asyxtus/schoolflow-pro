@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { getCurrentSchool } from "@/lib/school.functions";
+import { getDashboardStats } from "@/lib/dashboard.functions";
+import { formatFCFA } from "@/lib/mock/students";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: DashboardPage,
@@ -34,9 +36,14 @@ export const Route = createFileRoute("/_authenticated/")({
 
 function DashboardPage() {
   const fetchSchool = useServerFn(getCurrentSchool);
+  const fetchStats = useServerFn(getDashboardStats);
   const { data } = useSuspenseQuery({
     queryKey: ["current-school"],
     queryFn: () => fetchSchool(),
+  });
+  const { data: stats } = useSuspenseQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: () => fetchStats(),
   });
   const school = data?.school;
   const profile = data?.profile;
@@ -55,7 +62,9 @@ function DashboardPage() {
             <Button variant="outline" size="sm">
               Export
             </Button>
-            <Button size="sm">New admission</Button>
+            <Button size="sm" asChild>
+              <Link to="/admissions/new">New admission</Link>
+            </Button>
           </>
         }
       />
@@ -63,31 +72,31 @@ function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Total enrolment"
-          value="1,284"
-          hint="Across 24 classes"
-          delta={{ value: "+12", direction: "up" }}
+          value={stats.totalEnrolment.toLocaleString()}
+          hint={`Across ${stats.classCount} class${stats.classCount === 1 ? "" : "es"}`}
           icon={Users}
         />
         <StatCard
-          label="Attendance today"
-          value="94.2%"
-          hint="1,210 present · 74 absent"
-          delta={{ value: "+0.8%", direction: "up" }}
+          label="Avg. attendance"
+          value={`${stats.avgAttendance}%`}
+          hint={`${stats.activeEnrolment} active students`}
           icon={UserCheck}
         />
         <StatCard
-          label="Fee collection"
-          value="XAF 42.6M"
-          hint="of XAF 58.4M expected"
-          delta={{ value: "-3.1%", direction: "down" }}
+          label="Fees collected"
+          value={`${stats.feeCollectionRate}%`}
+          hint={
+            stats.outstandingBalance > 0
+              ? `${formatFCFA(stats.outstandingBalance)} outstanding`
+              : "All balances cleared"
+          }
           icon={Banknote}
           tone="accent"
         />
         <StatCard
           label="Open admissions"
-          value="87"
-          hint="23 awaiting interview"
-          delta={{ value: "+9", direction: "up" }}
+          value={stats.openApplicants.toLocaleString()}
+          hint={`${stats.pipeline.find((p) => p.stage === "interview")?.count ?? 0} awaiting interview`}
           icon={ClipboardList}
         />
       </div>
@@ -127,17 +136,17 @@ function DashboardPage() {
             <p className="text-xs text-muted-foreground">This week</p>
           </CardHeader>
           <CardContent className="space-y-3">
-            {pipeline.map((p) => (
+            {pipelineLabels.map((p) => (
               <div
-                key={p.stage}
+                key={p.id}
                 className="flex items-center justify-between rounded-md border border-border bg-card px-3 py-2.5"
               >
                 <div className="flex items-center gap-2.5">
                   <Circle className={`h-2 w-2 fill-current ${p.color}`} />
-                  <span className="text-sm text-foreground">{p.stage}</span>
+                  <span className="text-sm text-foreground">{p.label}</span>
                 </div>
                 <Badge variant="secondary" className="tabular-nums">
-                  {p.count}
+                  {stats.pipeline.find((s) => s.stage === p.id)?.count ?? 0}
                 </Badge>
               </div>
             ))}
@@ -211,12 +220,12 @@ const feeRows = [
   { class: "Upper 6 Sci.", collected: 2_100_000, pct: 48 },
 ];
 
-const pipeline = [
-  { stage: "New applications", count: 34, color: "text-chart-2" },
-  { stage: "Documents review", count: 18, color: "text-chart-1" },
-  { stage: "Interview scheduled", count: 12, color: "text-chart-4" },
-  { stage: "Offer sent", count: 9, color: "text-chart-3" },
-  { stage: "Enrolled", count: 14, color: "text-primary" },
+const pipelineLabels = [
+  { id: "new", label: "New applications", color: "text-chart-2" },
+  { id: "review", label: "Documents review", color: "text-chart-1" },
+  { id: "interview", label: "Interview scheduled", color: "text-chart-4" },
+  { id: "offer", label: "Offer sent", color: "text-chart-3" },
+  { id: "enrolled", label: "Enrolled", color: "text-primary" },
 ];
 
 const absences = [

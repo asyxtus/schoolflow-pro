@@ -21,6 +21,7 @@ import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedClassesRouteImport } from './routes/_authenticated.classes'
 import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated.attendance'
 import { Route as AuthenticatedAdmissionsRouteImport } from './routes/_authenticated.admissions'
+import { Route as AuthenticatedStudentsNewRouteImport } from './routes/_authenticated.students_.new'
 import { Route as AuthenticatedStudentsStudentIdRouteImport } from './routes/_authenticated.students.$studentId'
 import { Route as AuthenticatedAdmissionsNewRouteImport } from './routes/_authenticated.admissions.new'
 
@@ -83,6 +84,12 @@ const AuthenticatedAdmissionsRoute = AuthenticatedAdmissionsRouteImport.update({
   path: '/admissions',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedStudentsNewRoute =
+  AuthenticatedStudentsNewRouteImport.update({
+    id: '/students_/new',
+    path: '/students/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedStudentsStudentIdRoute =
   AuthenticatedStudentsStudentIdRouteImport.update({
     id: '/$studentId',
@@ -110,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/timetable': typeof AuthenticatedTimetableRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
+  '/students/new': typeof AuthenticatedStudentsNewRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -125,6 +133,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
+  '/students/new': typeof AuthenticatedStudentsNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -142,6 +151,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admissions/new': typeof AuthenticatedAdmissionsNewRoute
   '/_authenticated/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
+  '/_authenticated/students_/new': typeof AuthenticatedStudentsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/timetable'
     | '/admissions/new'
     | '/students/$studentId'
+    | '/students/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admissions/new'
     | '/students/$studentId'
+    | '/students/new'
   id:
     | '__root__'
     | '/_authenticated'
@@ -190,6 +202,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/admissions/new'
     | '/_authenticated/students/$studentId'
+    | '/_authenticated/students_/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -284,6 +297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdmissionsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/students_/new': {
+      id: '/_authenticated/students_/new'
+      path: '/students/new'
+      fullPath: '/students/new'
+      preLoaderRoute: typeof AuthenticatedStudentsNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/students/$studentId': {
       id: '/_authenticated/students/$studentId'
       path: '/$studentId'
@@ -338,6 +358,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
   AuthenticatedTimetableRoute: typeof AuthenticatedTimetableRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedStudentsNewRoute: typeof AuthenticatedStudentsNewRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -350,6 +371,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
   AuthenticatedTimetableRoute: AuthenticatedTimetableRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedStudentsNewRoute: AuthenticatedStudentsNewRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
