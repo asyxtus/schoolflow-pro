@@ -19,6 +19,8 @@ import { Route as AppMessagesRouteImport } from './routes/_app.messages'
 import { Route as AppClassesRouteImport } from './routes/_app.classes'
 import { Route as AppAttendanceRouteImport } from './routes/_app.attendance'
 import { Route as AppAdmissionsRouteImport } from './routes/_app.admissions'
+import { Route as AppStudentsStudentIdRouteImport } from './routes/_app.students.$studentId'
+import { Route as AppAdmissionsNewRouteImport } from './routes/_app.admissions.new'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -69,41 +71,57 @@ const AppAdmissionsRoute = AppAdmissionsRouteImport.update({
   path: '/admissions',
   getParentRoute: () => AppRoute,
 } as any)
+const AppStudentsStudentIdRoute = AppStudentsStudentIdRouteImport.update({
+  id: '/$studentId',
+  path: '/$studentId',
+  getParentRoute: () => AppStudentsRoute,
+} as any)
+const AppAdmissionsNewRoute = AppAdmissionsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AppAdmissionsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
-  '/admissions': typeof AppAdmissionsRoute
+  '/admissions': typeof AppAdmissionsRouteWithChildren
   '/attendance': typeof AppAttendanceRoute
   '/classes': typeof AppClassesRoute
   '/messages': typeof AppMessagesRoute
   '/reports': typeof AppReportsRoute
   '/settings': typeof AppSettingsRoute
-  '/students': typeof AppStudentsRoute
+  '/students': typeof AppStudentsRouteWithChildren
   '/timetable': typeof AppTimetableRoute
+  '/admissions/new': typeof AppAdmissionsNewRoute
+  '/students/$studentId': typeof AppStudentsStudentIdRoute
 }
 export interface FileRoutesByTo {
-  '/admissions': typeof AppAdmissionsRoute
+  '/admissions': typeof AppAdmissionsRouteWithChildren
   '/attendance': typeof AppAttendanceRoute
   '/classes': typeof AppClassesRoute
   '/messages': typeof AppMessagesRoute
   '/reports': typeof AppReportsRoute
   '/settings': typeof AppSettingsRoute
-  '/students': typeof AppStudentsRoute
+  '/students': typeof AppStudentsRouteWithChildren
   '/timetable': typeof AppTimetableRoute
   '/': typeof AppIndexRoute
+  '/admissions/new': typeof AppAdmissionsNewRoute
+  '/students/$studentId': typeof AppStudentsStudentIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
-  '/_app/admissions': typeof AppAdmissionsRoute
+  '/_app/admissions': typeof AppAdmissionsRouteWithChildren
   '/_app/attendance': typeof AppAttendanceRoute
   '/_app/classes': typeof AppClassesRoute
   '/_app/messages': typeof AppMessagesRoute
   '/_app/reports': typeof AppReportsRoute
   '/_app/settings': typeof AppSettingsRoute
-  '/_app/students': typeof AppStudentsRoute
+  '/_app/students': typeof AppStudentsRouteWithChildren
   '/_app/timetable': typeof AppTimetableRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/admissions/new': typeof AppAdmissionsNewRoute
+  '/_app/students/$studentId': typeof AppStudentsStudentIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -117,6 +135,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/students'
     | '/timetable'
+    | '/admissions/new'
+    | '/students/$studentId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/admissions'
@@ -128,6 +148,8 @@ export interface FileRouteTypes {
     | '/students'
     | '/timetable'
     | '/'
+    | '/admissions/new'
+    | '/students/$studentId'
   id:
     | '__root__'
     | '/_app'
@@ -140,6 +162,8 @@ export interface FileRouteTypes {
     | '/_app/students'
     | '/_app/timetable'
     | '/_app/'
+    | '/_app/admissions/new'
+    | '/_app/students/$studentId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -218,29 +242,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdmissionsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/students/$studentId': {
+      id: '/_app/students/$studentId'
+      path: '/$studentId'
+      fullPath: '/students/$studentId'
+      preLoaderRoute: typeof AppStudentsStudentIdRouteImport
+      parentRoute: typeof AppStudentsRoute
+    }
+    '/_app/admissions/new': {
+      id: '/_app/admissions/new'
+      path: '/new'
+      fullPath: '/admissions/new'
+      preLoaderRoute: typeof AppAdmissionsNewRouteImport
+      parentRoute: typeof AppAdmissionsRoute
+    }
   }
 }
 
+interface AppAdmissionsRouteChildren {
+  AppAdmissionsNewRoute: typeof AppAdmissionsNewRoute
+}
+
+const AppAdmissionsRouteChildren: AppAdmissionsRouteChildren = {
+  AppAdmissionsNewRoute: AppAdmissionsNewRoute,
+}
+
+const AppAdmissionsRouteWithChildren = AppAdmissionsRoute._addFileChildren(
+  AppAdmissionsRouteChildren,
+)
+
+interface AppStudentsRouteChildren {
+  AppStudentsStudentIdRoute: typeof AppStudentsStudentIdRoute
+}
+
+const AppStudentsRouteChildren: AppStudentsRouteChildren = {
+  AppStudentsStudentIdRoute: AppStudentsStudentIdRoute,
+}
+
+const AppStudentsRouteWithChildren = AppStudentsRoute._addFileChildren(
+  AppStudentsRouteChildren,
+)
+
 interface AppRouteChildren {
-  AppAdmissionsRoute: typeof AppAdmissionsRoute
+  AppAdmissionsRoute: typeof AppAdmissionsRouteWithChildren
   AppAttendanceRoute: typeof AppAttendanceRoute
   AppClassesRoute: typeof AppClassesRoute
   AppMessagesRoute: typeof AppMessagesRoute
   AppReportsRoute: typeof AppReportsRoute
   AppSettingsRoute: typeof AppSettingsRoute
-  AppStudentsRoute: typeof AppStudentsRoute
+  AppStudentsRoute: typeof AppStudentsRouteWithChildren
   AppTimetableRoute: typeof AppTimetableRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppAdmissionsRoute: AppAdmissionsRoute,
+  AppAdmissionsRoute: AppAdmissionsRouteWithChildren,
   AppAttendanceRoute: AppAttendanceRoute,
   AppClassesRoute: AppClassesRoute,
   AppMessagesRoute: AppMessagesRoute,
   AppReportsRoute: AppReportsRoute,
   AppSettingsRoute: AppSettingsRoute,
-  AppStudentsRoute: AppStudentsRoute,
+  AppStudentsRoute: AppStudentsRouteWithChildren,
   AppTimetableRoute: AppTimetableRoute,
   AppIndexRoute: AppIndexRoute,
 }
