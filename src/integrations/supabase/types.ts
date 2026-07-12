@@ -343,6 +343,7 @@ export type Database = {
           method: Database["public"]["Enums"]["payment_method"]
           note: string | null
           paid_at: string
+          receipt_no: string | null
           recorded_by: string | null
           reference: string | null
           school_id: string
@@ -355,6 +356,7 @@ export type Database = {
           method?: Database["public"]["Enums"]["payment_method"]
           note?: string | null
           paid_at?: string
+          receipt_no?: string | null
           recorded_by?: string | null
           reference?: string | null
           school_id: string
@@ -367,6 +369,7 @@ export type Database = {
           method?: Database["public"]["Enums"]["payment_method"]
           note?: string | null
           paid_at?: string
+          receipt_no?: string | null
           recorded_by?: string | null
           reference?: string | null
           school_id?: string
@@ -468,6 +471,76 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      student_fees: {
+        Row: {
+          academic_year: string | null
+          amount_fcfa: number
+          created_at: string
+          created_by: string | null
+          discount_fcfa: number
+          due_date: string | null
+          fee_structure_id: string | null
+          id: string
+          label: string
+          note: string | null
+          school_id: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          academic_year?: string | null
+          amount_fcfa: number
+          created_at?: string
+          created_by?: string | null
+          discount_fcfa?: number
+          due_date?: string | null
+          fee_structure_id?: string | null
+          id?: string
+          label: string
+          note?: string | null
+          school_id: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          academic_year?: string | null
+          amount_fcfa?: number
+          created_at?: string
+          created_by?: string | null
+          discount_fcfa?: number
+          due_date?: string | null
+          fee_structure_id?: string | null
+          id?: string
+          label?: string
+          note?: string | null
+          school_id?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_fees_fee_structure_id_fkey"
+            columns: ["fee_structure_id"]
+            isOneToOne: false
+            referencedRelation: "fee_structures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_fees_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_fees_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       students: {
         Row: {
@@ -650,6 +723,10 @@ export type Database = {
       is_staff_of_school: {
         Args: { _school_id: string; _user_id: string }
         Returns: boolean
+      }
+      recompute_student_balance: {
+        Args: { _student_id: string }
+        Returns: undefined
       }
     }
     Enums: {
