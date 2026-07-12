@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getCurrentSchool, updateSchool, updateProfile } from "@/lib/school.functions";
 
-export const Route = createFileRoute("/_authenticated/settings")({
+export const Route = createFileRoute("/_authenticated/settings/")({
   component: SettingsPage,
 });
 
