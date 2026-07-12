@@ -91,10 +91,10 @@ function WalletPage() {
       />
 
       <div className="grid gap-4 md:grid-cols-4">
-        <StatCard title="Total wallet balance" value={fmt(summary?.totalBalance ?? 0)} icon={Wallet} />
-        <StatCard title="Active students" value={summary?.students ?? 0} icon={Users} />
-        <StatCard title="Deposits this month" value={fmt(summary?.depositsThisMonth ?? 0)} icon={ArrowDownCircle} />
-        <StatCard title="Withdrawals this month" value={fmt(summary?.withdrawalsThisMonth ?? 0)} icon={ArrowUpCircle} />
+        <StatCard label="Total wallet balance" value={fmt(summary?.totalBalance ?? 0)} icon={Wallet} />
+        <StatCard label="Active students" value={String(summary?.students ?? 0)} icon={Users} />
+        <StatCard label="Deposits this month" value={fmt(summary?.depositsThisMonth ?? 0)} icon={ArrowDownCircle} />
+        <StatCard label="Withdrawals this month" value={fmt(summary?.withdrawalsThisMonth ?? 0)} icon={ArrowUpCircle} />
       </div>
 
       <Tabs defaultValue="transactions">
