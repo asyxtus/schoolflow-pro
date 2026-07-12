@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Printer } from "lucide-react";
+import { Printer, FileText, Sliders } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
@@ -75,7 +75,16 @@ function ReportsPage() {
       <PageHeader
         title="Reports"
         description="Score entry, ranking and report cards"
-        actions={<Button size="sm" variant="outline" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />Print</Button>}
+        actions={
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" asChild>
+              <Link to="/reports/coefficients"><Sliders className="mr-2 h-4 w-4" />Coefficients</Link>
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => window.print()}>
+              <Printer className="mr-2 h-4 w-4" />Print
+            </Button>
+          </div>
+        }
       />
 
       <Card className="mb-4 print:hidden">
@@ -125,6 +134,7 @@ function ReportsPage() {
                 <TableHead className="w-28">Exam /100</TableHead>
                 <TableHead className="w-24">Total</TableHead>
                 <TableHead className="w-20 text-right">Rank</TableHead>
+                <TableHead className="w-28 text-right">Bulletin</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -138,6 +148,8 @@ function ReportsPage() {
                   total={r.total}
                   rank={rankMap.get(r.student.id) ?? null}
                   onSave={(ca, exam) => saveMut.mutate({ studentId: r.student.id, ca, exam })}
+                  studentId={r.student.id}
+                  sequence={sequence}
                 />
               ))}
             </TableBody>
@@ -149,12 +161,13 @@ function ReportsPage() {
 }
 
 function ScoreRow({
-  name, matricule, ca, exam, total, rank, onSave,
+  name, matricule, ca, exam, total, rank, onSave, studentId, sequence,
 }: {
   name: string; matricule: string | null;
   ca: number | null; exam: number | null; total: number | null;
   rank: number | null;
   onSave: (ca: number | null, exam: number | null) => void;
+  studentId: string; sequence: number;
 }) {
   const [caStr, setCa] = useState(ca?.toString() ?? "");
   const [examStr, setExam] = useState(exam?.toString() ?? "");
@@ -176,6 +189,16 @@ function ScoreRow({
       <TableCell><Input value={examStr} onChange={(e) => setExam(e.target.value)} onBlur={commit} className="h-8 w-20" inputMode="decimal" /></TableCell>
       <TableCell>{total != null ? <Badge variant={total >= 50 ? "default" : "secondary"}>{total}</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
       <TableCell className="text-right font-medium">{rank ?? "—"}</TableCell>
+      <TableCell className="text-right">
+        <Button size="sm" variant="ghost" asChild>
+          <Link
+            to="/reports/bulletin/$studentId/$sequence"
+            params={{ studentId, sequence: String(sequence) }}
+          >
+            <FileText className="mr-1 h-3.5 w-3.5" />View
+          </Link>
+        </Button>
+      </TableCell>
     </TableRow>
   );
 }

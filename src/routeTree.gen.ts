@@ -27,6 +27,7 @@ import { Route as AuthenticatedStudentsNewRouteImport } from './routes/_authenti
 import { Route as AuthenticatedStudentsStudentIdRouteImport } from './routes/_authenticated.students.$studentId'
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated.settings.users'
 import { Route as AuthenticatedSettingsAuditRouteImport } from './routes/_authenticated.settings.audit'
+import { Route as AuthenticatedReportsCoefficientsRouteImport } from './routes/_authenticated.reports.coefficients'
 import { Route as AuthenticatedAdmissionsNewRouteImport } from './routes/_authenticated.admissions.new'
 import { Route as AuthenticatedFinanceReceiptPaymentIdRouteImport } from './routes/_authenticated.finance.receipt.$paymentId'
 import { Route as AuthenticatedReportsBulletinStudentIdSequenceRouteImport } from './routes/_authenticated.reports.bulletin.$studentId.$sequence'
@@ -126,6 +127,12 @@ const AuthenticatedSettingsAuditRoute =
     path: '/settings/audit',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedReportsCoefficientsRoute =
+  AuthenticatedReportsCoefficientsRouteImport.update({
+    id: '/coefficients',
+    path: '/coefficients',
+    getParentRoute: () => AuthenticatedReportsRoute,
+  } as any)
 const AuthenticatedAdmissionsNewRoute =
   AuthenticatedAdmissionsNewRouteImport.update({
     id: '/new',
@@ -159,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/timetable': typeof AuthenticatedTimetableRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
   '/settings/audit': typeof AuthenticatedSettingsAuditRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
@@ -181,6 +189,7 @@ export interface FileRoutesByTo {
   '/timetable': typeof AuthenticatedTimetableRoute
   '/': typeof AuthenticatedIndexRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
   '/settings/audit': typeof AuthenticatedSettingsAuditRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
@@ -205,6 +214,7 @@ export interface FileRoutesById {
   '/_authenticated/timetable': typeof AuthenticatedTimetableRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/_authenticated/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
   '/_authenticated/settings/audit': typeof AuthenticatedSettingsAuditRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/_authenticated/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
@@ -229,6 +239,7 @@ export interface FileRouteTypes {
     | '/students'
     | '/timetable'
     | '/admissions/new'
+    | '/reports/coefficients'
     | '/settings/audit'
     | '/settings/users'
     | '/students/$studentId'
@@ -251,6 +262,7 @@ export interface FileRouteTypes {
     | '/timetable'
     | '/'
     | '/admissions/new'
+    | '/reports/coefficients'
     | '/settings/audit'
     | '/settings/users'
     | '/students/$studentId'
@@ -274,6 +286,7 @@ export interface FileRouteTypes {
     | '/_authenticated/timetable'
     | '/_authenticated/'
     | '/_authenticated/admissions/new'
+    | '/_authenticated/reports/coefficients'
     | '/_authenticated/settings/audit'
     | '/_authenticated/settings/users'
     | '/_authenticated/students/$studentId'
@@ -417,6 +430,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsAuditRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports/coefficients': {
+      id: '/_authenticated/reports/coefficients'
+      path: '/coefficients'
+      fullPath: '/reports/coefficients'
+      preLoaderRoute: typeof AuthenticatedReportsCoefficientsRouteImport
+      parentRoute: typeof AuthenticatedReportsRoute
+    }
     '/_authenticated/admissions/new': {
       id: '/_authenticated/admissions/new'
       path: '/new'
@@ -468,10 +488,12 @@ const AuthenticatedFinanceRouteWithChildren =
   AuthenticatedFinanceRoute._addFileChildren(AuthenticatedFinanceRouteChildren)
 
 interface AuthenticatedReportsRouteChildren {
+  AuthenticatedReportsCoefficientsRoute: typeof AuthenticatedReportsCoefficientsRoute
   AuthenticatedReportsBulletinStudentIdSequenceRoute: typeof AuthenticatedReportsBulletinStudentIdSequenceRoute
 }
 
 const AuthenticatedReportsRouteChildren: AuthenticatedReportsRouteChildren = {
+  AuthenticatedReportsCoefficientsRoute: AuthenticatedReportsCoefficientsRoute,
   AuthenticatedReportsBulletinStudentIdSequenceRoute:
     AuthenticatedReportsBulletinStudentIdSequenceRoute,
 }
