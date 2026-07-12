@@ -87,10 +87,10 @@ export const recordPayment = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
     // Update student balance snapshot
-    const { data: s } = await supabase.from("students").select("balance_fcfa").eq("id", data.student_id).single();
+    const { data: s } = await supabase.from("students").select("fee_balance").eq("id", data.student_id).single();
     if (s) {
-      const next = Math.max(0, (s.balance_fcfa ?? 0) - data.amount_fcfa);
-      await supabase.from("students").update({ balance_fcfa: next }).eq("id", data.student_id);
+      const next = Math.max(0, (s.fee_balance ?? 0) - data.amount_fcfa);
+      await supabase.from("students").update({ fee_balance: next }).eq("id", data.student_id);
     }
     return { ok: true };
   });
@@ -104,9 +104,9 @@ export const deletePayment = createServerFn({ method: "POST" })
     const { error } = await supabase.from("payments").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     if (p) {
-      const { data: s } = await supabase.from("students").select("balance_fcfa").eq("id", p.student_id).single();
+      const { data: s } = await supabase.from("students").select("fee_balance").eq("id", p.student_id).single();
       if (s) {
-        await supabase.from("students").update({ balance_fcfa: (s.balance_fcfa ?? 0) + p.amount_fcfa }).eq("id", p.student_id);
+        await supabase.from("students").update({ fee_balance: (s.fee_balance ?? 0) + p.amount_fcfa }).eq("id", p.student_id);
       }
     }
     return { ok: true };
@@ -120,12 +120,12 @@ export const financeSummary = createServerFn({ method: "GET" })
     if (!schoolId) return { collected: 0, outstanding: 0, students: 0, thisMonth: 0 };
     const [pays, studs] = await Promise.all([
       supabase.from("payments").select("amount_fcfa, paid_at").eq("school_id", schoolId),
-      supabase.from("students").select("balance_fcfa").eq("school_id", schoolId).eq("status", "active"),
+      supabase.from("students").select("fee_balance").eq("school_id", schoolId).eq("status", "active"),
     ]);
     const collected = (pays.data ?? []).reduce((a, r) => a + (r.amount_fcfa ?? 0), 0);
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const thisMonth = (pays.data ?? []).filter((r) => r.paid_at >= monthStart).reduce((a, r) => a + (r.amount_fcfa ?? 0), 0);
-    const outstanding = (studs.data ?? []).reduce((a, r) => a + (r.balance_fcfa ?? 0), 0);
+    const outstanding = (studs.data ?? []).reduce((a, r) => a + (r.fee_balance ?? 0), 0);
     return { collected, outstanding, students: studs.data?.length ?? 0, thisMonth };
   });
