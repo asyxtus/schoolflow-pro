@@ -16,6 +16,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.
 import { Route as AuthenticatedTimetableRouteImport } from './routes/_authenticated.timetable'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated.students'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
+import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated.messages'
 import { Route as AuthenticatedClassesRouteImport } from './routes/_authenticated.classes'
 import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated.attendance'
 import { Route as AuthenticatedAdmissionsRouteImport } from './routes/_authenticated.admissions'
@@ -55,6 +56,11 @@ const AuthenticatedStudentsRoute = AuthenticatedStudentsRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMessagesRoute = AuthenticatedMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedClassesRoute = AuthenticatedClassesRouteImport.update({
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/admissions': typeof AuthenticatedAdmissionsRouteWithChildren
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/classes': typeof AuthenticatedClassesRoute
+  '/messages': typeof AuthenticatedMessagesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/timetable': typeof AuthenticatedTimetableRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/admissions': typeof AuthenticatedAdmissionsRouteWithChildren
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/classes': typeof AuthenticatedClassesRoute
+  '/messages': typeof AuthenticatedMessagesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/timetable': typeof AuthenticatedTimetableRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/_authenticated/admissions': typeof AuthenticatedAdmissionsRouteWithChildren
   '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
   '/_authenticated/classes': typeof AuthenticatedClassesRoute
+  '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
   '/_authenticated/timetable': typeof AuthenticatedTimetableRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/admissions'
     | '/attendance'
     | '/classes'
+    | '/messages'
     | '/settings'
     | '/students'
     | '/timetable'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/admissions'
     | '/attendance'
     | '/classes'
+    | '/messages'
     | '/settings'
     | '/students'
     | '/timetable'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admissions'
     | '/_authenticated/attendance'
     | '/_authenticated/classes'
+    | '/_authenticated/messages'
     | '/_authenticated/settings'
     | '/_authenticated/students'
     | '/_authenticated/timetable'
@@ -236,6 +248,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/messages': {
+      id: '/_authenticated/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof AuthenticatedMessagesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/classes': {
@@ -314,6 +333,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdmissionsRoute: typeof AuthenticatedAdmissionsRouteWithChildren
   AuthenticatedAttendanceRoute: typeof AuthenticatedAttendanceRoute
   AuthenticatedClassesRoute: typeof AuthenticatedClassesRoute
+  AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
   AuthenticatedTimetableRoute: typeof AuthenticatedTimetableRoute
@@ -325,6 +345,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdmissionsRoute: AuthenticatedAdmissionsRouteWithChildren,
   AuthenticatedAttendanceRoute: AuthenticatedAttendanceRoute,
   AuthenticatedClassesRoute: AuthenticatedClassesRoute,
+  AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
   AuthenticatedTimetableRoute: AuthenticatedTimetableRoute,
