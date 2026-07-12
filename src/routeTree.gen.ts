@@ -25,6 +25,7 @@ import { Route as AuthenticatedAdmissionsRouteImport } from './routes/_authentic
 import { Route as AuthenticatedStudentsNewRouteImport } from './routes/_authenticated.students_.new'
 import { Route as AuthenticatedStudentsStudentIdRouteImport } from './routes/_authenticated.students.$studentId'
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated.settings.users'
+import { Route as AuthenticatedSettingsAuditRouteImport } from './routes/_authenticated.settings.audit'
 import { Route as AuthenticatedAdmissionsNewRouteImport } from './routes/_authenticated.admissions.new'
 import { Route as AuthenticatedFinanceReceiptPaymentIdRouteImport } from './routes/_authenticated.finance.receipt.$paymentId'
 
@@ -110,6 +111,12 @@ const AuthenticatedSettingsUsersRoute =
     path: '/users',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
+const AuthenticatedSettingsAuditRoute =
+  AuthenticatedSettingsAuditRouteImport.update({
+    id: '/audit',
+    path: '/audit',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthenticatedAdmissionsNewRoute =
   AuthenticatedAdmissionsNewRouteImport.update({
     id: '/new',
@@ -137,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/timetable': typeof AuthenticatedTimetableRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/settings/audit': typeof AuthenticatedSettingsAuditRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
   '/students/new': typeof AuthenticatedStudentsNewRoute
@@ -156,6 +164,7 @@ export interface FileRoutesByTo {
   '/timetable': typeof AuthenticatedTimetableRoute
   '/': typeof AuthenticatedIndexRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/settings/audit': typeof AuthenticatedSettingsAuditRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
   '/students/new': typeof AuthenticatedStudentsNewRoute
@@ -177,6 +186,7 @@ export interface FileRoutesById {
   '/_authenticated/timetable': typeof AuthenticatedTimetableRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/_authenticated/settings/audit': typeof AuthenticatedSettingsAuditRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/_authenticated/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
   '/_authenticated/students_/new': typeof AuthenticatedStudentsNewRoute
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/students'
     | '/timetable'
     | '/admissions/new'
+    | '/settings/audit'
     | '/settings/users'
     | '/students/$studentId'
     | '/students/new'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/timetable'
     | '/'
     | '/admissions/new'
+    | '/settings/audit'
     | '/settings/users'
     | '/students/$studentId'
     | '/students/new'
@@ -237,6 +249,7 @@ export interface FileRouteTypes {
     | '/_authenticated/timetable'
     | '/_authenticated/'
     | '/_authenticated/admissions/new'
+    | '/_authenticated/settings/audit'
     | '/_authenticated/settings/users'
     | '/_authenticated/students/$studentId'
     | '/_authenticated/students_/new'
@@ -363,6 +376,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsUsersRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
+    '/_authenticated/settings/audit': {
+      id: '/_authenticated/settings/audit'
+      path: '/audit'
+      fullPath: '/settings/audit'
+      preLoaderRoute: typeof AuthenticatedSettingsAuditRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/_authenticated/admissions/new': {
       id: '/_authenticated/admissions/new'
       path: '/new'
@@ -407,10 +427,12 @@ const AuthenticatedFinanceRouteWithChildren =
   AuthenticatedFinanceRoute._addFileChildren(AuthenticatedFinanceRouteChildren)
 
 interface AuthenticatedSettingsRouteChildren {
+  AuthenticatedSettingsAuditRoute: typeof AuthenticatedSettingsAuditRoute
   AuthenticatedSettingsUsersRoute: typeof AuthenticatedSettingsUsersRoute
 }
 
 const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
+  AuthenticatedSettingsAuditRoute: AuthenticatedSettingsAuditRoute,
   AuthenticatedSettingsUsersRoute: AuthenticatedSettingsUsersRoute,
 }
 
