@@ -15,6 +15,7 @@ import {
   Wallet,
   ShieldCheck,
   History,
+  ScrollText,
 } from "lucide-react";
 
 import {
@@ -50,6 +51,7 @@ const groups = [
     items: [
       { title: "Timetable", url: "/timetable", icon: BookOpen },
       { title: "Reports", url: "/reports", icon: FileText },
+      { title: "Bulletins", url: "/reports/coefficients", icon: ScrollText },
     ],
   },
   {
