@@ -51,21 +51,30 @@ export const deleteFeeStructure = createServerFn({ method: "POST" })
 
 export const listPayments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { studentId?: string; limit?: number }) => d)
+  .inputValidator((d: { studentId?: string; limit?: number; method?: PaymentMethod | "all"; from?: string; to?: string; q?: string }) => d)
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) return [];
     let q = supabase
       .from("payments")
-      .select("id, student_id, amount_fcfa, method, reference, note, paid_at, students(first_name,last_name,matricule,class_name)")
+      .select("id, student_id, amount_fcfa, method, reference, note, paid_at, receipt_no, students(first_name,last_name,matricule,class_name)")
       .eq("school_id", schoolId)
       .order("paid_at", { ascending: false })
-      .limit(data.limit ?? 100);
+      .limit(data.limit ?? 200);
     if (data.studentId) q = q.eq("student_id", data.studentId);
+    if (data.method && data.method !== "all") q = q.eq("method", data.method);
+    if (data.from) q = q.gte("paid_at", data.from);
+    if (data.to) q = q.lte("paid_at", data.to);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    const search = (data.q ?? "").trim().toLowerCase();
+    if (!search) return rows ?? [];
+    return (rows ?? []).filter((r) => {
+      const s = (r as { students?: { first_name?: string; last_name?: string; matricule?: string; class_name?: string } }).students;
+      const hay = `${s?.first_name ?? ""} ${s?.last_name ?? ""} ${s?.matricule ?? ""} ${s?.class_name ?? ""} ${r.reference ?? ""} ${r.receipt_no ?? ""}`.toLowerCase();
+      return hay.includes(search);
+    });
   });
 
 export const recordPayment = createServerFn({ method: "POST" })
@@ -75,7 +84,7 @@ export const recordPayment = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) throw new Error("No school assigned");
-    const { error } = await supabase.from("payments").insert({
+    const { data: inserted, error } = await supabase.from("payments").insert({
       school_id: schoolId,
       student_id: data.student_id,
       amount_fcfa: data.amount_fcfa,
@@ -84,31 +93,17 @@ export const recordPayment = createServerFn({ method: "POST" })
       note: data.note ?? null,
       paid_at: data.paid_at ?? new Date().toISOString(),
       recorded_by: userId,
-    });
+    }).select("id, receipt_no").single();
     if (error) throw new Error(error.message);
-    // Update student balance snapshot
-    const { data: s } = await supabase.from("students").select("fee_balance").eq("id", data.student_id).single();
-    if (s) {
-      const next = Math.max(0, (s.fee_balance ?? 0) - data.amount_fcfa);
-      await supabase.from("students").update({ fee_balance: next }).eq("id", data.student_id);
-    }
-    return { ok: true };
+    return { ok: true, id: inserted?.id, receipt_no: inserted?.receipt_no };
   });
 
 export const deletePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ context, data }) => {
-    const { supabase } = context;
-    const { data: p } = await supabase.from("payments").select("student_id, amount_fcfa").eq("id", data.id).single();
-    const { error } = await supabase.from("payments").delete().eq("id", data.id);
+    const { error } = await context.supabase.from("payments").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
-    if (p) {
-      const { data: s } = await supabase.from("students").select("fee_balance").eq("id", p.student_id).single();
-      if (s) {
-        await supabase.from("students").update({ fee_balance: (s.fee_balance ?? 0) + p.amount_fcfa }).eq("id", p.student_id);
-      }
-    }
     return { ok: true };
   });
 
@@ -128,4 +123,135 @@ export const financeSummary = createServerFn({ method: "GET" })
     const thisMonth = (pays.data ?? []).filter((r) => r.paid_at >= monthStart).reduce((a, r) => a + (r.amount_fcfa ?? 0), 0);
     const outstanding = (studs.data ?? []).reduce((a, r) => a + (r.fee_balance ?? 0), 0);
     return { collected, outstanding, students: studs.data?.length ?? 0, thisMonth };
+  });
+
+// ─── Invoices (student_fees) ────────────────────────────────────────────────
+
+export const listStudentFees = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { studentId?: string; className?: string }) => d)
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) return [];
+    let q = supabase
+      .from("student_fees")
+      .select("id, student_id, fee_structure_id, label, amount_fcfa, discount_fcfa, academic_year, due_date, note, created_at, students(first_name,last_name,matricule,class_name)")
+      .eq("school_id", schoolId)
+      .order("due_date", { ascending: true, nullsFirst: false });
+    if (data.studentId) q = q.eq("student_id", data.studentId);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    const filtered = data.className
+      ? (rows ?? []).filter((r) => (r as { students?: { class_name?: string } }).students?.class_name === data.className)
+      : (rows ?? []);
+    return filtered;
+  });
+
+export const upsertStudentFee = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id?: string; student_id: string; fee_structure_id?: string | null; label: string; amount_fcfa: number; discount_fcfa?: number; academic_year?: string; due_date?: string; note?: string }) => d)
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) throw new Error("No school assigned");
+    const row = {
+      school_id: schoolId,
+      student_id: data.student_id,
+      fee_structure_id: data.fee_structure_id ?? null,
+      label: data.label,
+      amount_fcfa: data.amount_fcfa,
+      discount_fcfa: data.discount_fcfa ?? 0,
+      academic_year: data.academic_year ?? null,
+      due_date: data.due_date ?? null,
+      note: data.note ?? null,
+      created_by: userId,
+    };
+    const { error } = data.id
+      ? await supabase.from("student_fees").update(row).eq("id", data.id)
+      : await supabase.from("student_fees").insert(row);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteStudentFee = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase.from("student_fees").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const bulkAssignFee = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { class_name: string; fee_structure_id?: string; label?: string; amount_fcfa?: number; academic_year?: string; due_date?: string }) => d)
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) throw new Error("No school assigned");
+
+    let label = data.label;
+    let amount = data.amount_fcfa;
+    let year = data.academic_year;
+    if (data.fee_structure_id) {
+      const { data: fs } = await supabase.from("fee_structures")
+        .select("label, amount_fcfa, academic_year")
+        .eq("id", data.fee_structure_id).single();
+      if (fs) { label = label ?? fs.label; amount = amount ?? fs.amount_fcfa; year = year ?? fs.academic_year ?? undefined; }
+    }
+    if (!label || !amount) throw new Error("Missing label or amount");
+
+    const { data: students, error: se } = await supabase
+      .from("students").select("id")
+      .eq("school_id", schoolId).eq("class_name", data.class_name).eq("status", "active");
+    if (se) throw new Error(se.message);
+    if (!students?.length) return { ok: true, count: 0 };
+
+    const rows = students.map((s) => ({
+      school_id: schoolId,
+      student_id: s.id,
+      fee_structure_id: data.fee_structure_id ?? null,
+      label: label!,
+      amount_fcfa: amount!,
+      discount_fcfa: 0,
+      academic_year: year ?? null,
+      due_date: data.due_date ?? null,
+      created_by: userId,
+    }));
+    const { error } = await supabase.from("student_fees").insert(rows);
+    if (error) throw new Error(error.message);
+    return { ok: true, count: rows.length };
+  });
+
+export const getPaymentReceipt = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) throw new Error("No school");
+    const { data: p, error } = await supabase
+      .from("payments")
+      .select("id, amount_fcfa, method, reference, note, paid_at, receipt_no, student_id, students(first_name,last_name,matricule,class_name,fee_balance)")
+      .eq("id", data.id).eq("school_id", schoolId).single();
+    if (error) throw new Error(error.message);
+    const { data: school } = await supabase
+      .from("schools").select("name, code, city, region, motto").eq("id", schoolId).single();
+    const { data: cashier } = await supabase
+      .from("profiles").select("full_name").eq("id", userId).maybeSingle();
+    return { payment: p, school, cashier };
+  });
+
+export const recomputeAllBalances = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) throw new Error("No school");
+    const { data: students } = await supabase.from("students").select("id").eq("school_id", schoolId);
+    for (const s of students ?? []) {
+      await supabase.rpc("recompute_student_balance", { _student_id: s.id });
+    }
+    return { ok: true, count: students?.length ?? 0 };
   });
