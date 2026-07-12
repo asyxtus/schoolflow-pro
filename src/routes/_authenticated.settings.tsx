@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { ShieldCheck, History } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,27 @@ function SettingsPage() {
         title="Settings"
         description="School profile and your account"
       />
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Link to="/settings/users" className="rounded-lg border bg-card p-4 hover:border-primary transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="rounded-md bg-primary/10 text-primary p-2"><ShieldCheck className="h-5 w-5" /></div>
+            <div>
+              <div className="font-medium">Users & Roles</div>
+              <div className="text-xs text-muted-foreground">Invite staff, assign roles</div>
+            </div>
+          </div>
+        </Link>
+        <Link to="/settings/audit" className="rounded-lg border bg-card p-4 hover:border-primary transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="rounded-md bg-primary/10 text-primary p-2"><History className="h-5 w-5" /></div>
+            <div>
+              <div className="font-medium">Audit log</div>
+              <div className="text-xs text-muted-foreground">Track every sensitive change</div>
+            </div>
+          </div>
+        </Link>
+      </div>
 
       <form onSubmit={submitSchool}>
         <Card>
