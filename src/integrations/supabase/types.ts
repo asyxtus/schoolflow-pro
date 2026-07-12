@@ -189,6 +189,63 @@ export type Database = {
           },
         ]
       }
+      bulletin_meta: {
+        Row: {
+          absences_justified: number | null
+          absences_unjustified: number | null
+          conduct: string | null
+          created_at: string
+          head_teacher_remark: string | null
+          id: string
+          principal_remark: string | null
+          school_id: string
+          sequence: number
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          absences_justified?: number | null
+          absences_unjustified?: number | null
+          conduct?: string | null
+          created_at?: string
+          head_teacher_remark?: string | null
+          id?: string
+          principal_remark?: string | null
+          school_id: string
+          sequence: number
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          absences_justified?: number | null
+          absences_unjustified?: number | null
+          conduct?: string | null
+          created_at?: string
+          head_teacher_remark?: string | null
+          id?: string
+          principal_remark?: string | null
+          school_id?: string
+          sequence?: number
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulletin_meta_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulletin_meta_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_structures: {
         Row: {
           academic_year: string | null
@@ -712,6 +769,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "students_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subject_coefficients: {
+        Row: {
+          class_name: string
+          coefficient: number
+          created_at: string
+          id: string
+          school_id: string
+          subject: string
+          teacher_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          class_name: string
+          coefficient?: number
+          created_at?: string
+          id?: string
+          school_id: string
+          subject: string
+          teacher_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          class_name?: string
+          coefficient?: number
+          created_at?: string
+          id?: string
+          school_id?: string
+          subject?: string
+          teacher_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subject_coefficients_school_id_fkey"
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
