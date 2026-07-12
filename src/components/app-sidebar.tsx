@@ -13,6 +13,8 @@ import {
   Settings,
   School,
   Wallet,
+  ShieldCheck,
+  History,
 } from "lucide-react";
 
 import {
@@ -57,6 +59,13 @@ const groups = [
   {
     label: "Operations",
     items: [{ title: "Finance", url: "/finance", icon: Wallet }],
+  },
+  {
+    label: "Administration",
+    items: [
+      { title: "Users & Roles", url: "/settings/users", icon: ShieldCheck },
+      { title: "Audit log", url: "/settings/audit", icon: History },
+    ],
   },
 ];
 

@@ -22,6 +22,7 @@ import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedClassesRouteImport } from './routes/_authenticated.classes'
 import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated.attendance'
 import { Route as AuthenticatedAdmissionsRouteImport } from './routes/_authenticated.admissions'
+import { Route as AuthenticatedAcceptInviteRouteImport } from './routes/_authenticated.accept-invite'
 import { Route as AuthenticatedStudentsNewRouteImport } from './routes/_authenticated.students_.new'
 import { Route as AuthenticatedStudentsStudentIdRouteImport } from './routes/_authenticated.students.$studentId'
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated.settings.users'
@@ -93,6 +94,12 @@ const AuthenticatedAdmissionsRoute = AuthenticatedAdmissionsRouteImport.update({
   path: '/admissions',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAcceptInviteRoute =
+  AuthenticatedAcceptInviteRouteImport.update({
+    id: '/accept-invite',
+    path: '/accept-invite',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedStudentsNewRoute =
   AuthenticatedStudentsNewRouteImport.update({
     id: '/students_/new',
@@ -134,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/onboarding': typeof OnboardingRoute
+  '/accept-invite': typeof AuthenticatedAcceptInviteRoute
   '/admissions': typeof AuthenticatedAdmissionsRouteWithChildren
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/classes': typeof AuthenticatedClassesRoute
@@ -153,6 +161,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/onboarding': typeof OnboardingRoute
+  '/accept-invite': typeof AuthenticatedAcceptInviteRoute
   '/admissions': typeof AuthenticatedAdmissionsRouteWithChildren
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/classes': typeof AuthenticatedClassesRoute
@@ -175,6 +184,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/onboarding': typeof OnboardingRoute
+  '/_authenticated/accept-invite': typeof AuthenticatedAcceptInviteRoute
   '/_authenticated/admissions': typeof AuthenticatedAdmissionsRouteWithChildren
   '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
   '/_authenticated/classes': typeof AuthenticatedClassesRoute
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/onboarding'
+    | '/accept-invite'
     | '/admissions'
     | '/attendance'
     | '/classes'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/onboarding'
+    | '/accept-invite'
     | '/admissions'
     | '/attendance'
     | '/classes'
@@ -238,6 +250,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/onboarding'
+    | '/_authenticated/accept-invite'
     | '/_authenticated/admissions'
     | '/_authenticated/attendance'
     | '/_authenticated/classes'
@@ -355,6 +368,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdmissionsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/accept-invite': {
+      id: '/_authenticated/accept-invite'
+      path: '/accept-invite'
+      fullPath: '/accept-invite'
+      preLoaderRoute: typeof AuthenticatedAcceptInviteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/students_/new': {
       id: '/_authenticated/students_/new'
       path: '/students/new'
@@ -455,6 +475,7 @@ const AuthenticatedStudentsRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAcceptInviteRoute: typeof AuthenticatedAcceptInviteRoute
   AuthenticatedAdmissionsRoute: typeof AuthenticatedAdmissionsRouteWithChildren
   AuthenticatedAttendanceRoute: typeof AuthenticatedAttendanceRoute
   AuthenticatedClassesRoute: typeof AuthenticatedClassesRoute
@@ -469,6 +490,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAcceptInviteRoute: AuthenticatedAcceptInviteRoute,
   AuthenticatedAdmissionsRoute: AuthenticatedAdmissionsRouteWithChildren,
   AuthenticatedAttendanceRoute: AuthenticatedAttendanceRoute,
   AuthenticatedClassesRoute: AuthenticatedClassesRoute,
