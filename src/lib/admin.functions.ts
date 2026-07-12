@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getUserSchoolId } from "./school-context";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 export type AppRole =
   | "super_admin"
@@ -20,7 +22,18 @@ export const MANAGEABLE_ROLES: AppRole[] = [
   "secretary",
 ];
 
-type SB = Awaited<ReturnType<typeof requireSupabaseAuth.server extends never ? never : never>>;
+async function assertManager(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  schoolId: string,
+) {
+  const { data, error } = await supabase.rpc("can_manage_school_data", {
+    _user_id: userId,
+    _school_id: schoolId,
+  });
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Only principals can manage staff");
+}
 
 // ─── Staff list ────────────────────────────────────────────────────
 export const listStaff = createServerFn({ method: "GET" })
