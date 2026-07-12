@@ -51,21 +51,30 @@ export const deleteFeeStructure = createServerFn({ method: "POST" })
 
 export const listPayments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { studentId?: string; limit?: number }) => d)
+  .inputValidator((d: { studentId?: string; limit?: number; method?: PaymentMethod | "all"; from?: string; to?: string; q?: string }) => d)
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) return [];
     let q = supabase
       .from("payments")
-      .select("id, student_id, amount_fcfa, method, reference, note, paid_at, students(first_name,last_name,matricule,class_name)")
+      .select("id, student_id, amount_fcfa, method, reference, note, paid_at, receipt_no, students(first_name,last_name,matricule,class_name)")
       .eq("school_id", schoolId)
       .order("paid_at", { ascending: false })
-      .limit(data.limit ?? 100);
+      .limit(data.limit ?? 200);
     if (data.studentId) q = q.eq("student_id", data.studentId);
+    if (data.method && data.method !== "all") q = q.eq("method", data.method);
+    if (data.from) q = q.gte("paid_at", data.from);
+    if (data.to) q = q.lte("paid_at", data.to);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    const search = (data.q ?? "").trim().toLowerCase();
+    if (!search) return rows ?? [];
+    return (rows ?? []).filter((r) => {
+      const s = (r as { students?: { first_name?: string; last_name?: string; matricule?: string; class_name?: string } }).students;
+      const hay = `${s?.first_name ?? ""} ${s?.last_name ?? ""} ${s?.matricule ?? ""} ${s?.class_name ?? ""} ${r.reference ?? ""} ${r.receipt_no ?? ""}`.toLowerCase();
+      return hay.includes(search);
+    });
   });
 
 export const recordPayment = createServerFn({ method: "POST" })
@@ -75,7 +84,7 @@ export const recordPayment = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) throw new Error("No school assigned");
-    const { error } = await supabase.from("payments").insert({
+    const { data: inserted, error } = await supabase.from("payments").insert({
       school_id: schoolId,
       student_id: data.student_id,
       amount_fcfa: data.amount_fcfa,
@@ -84,31 +93,17 @@ export const recordPayment = createServerFn({ method: "POST" })
       note: data.note ?? null,
       paid_at: data.paid_at ?? new Date().toISOString(),
       recorded_by: userId,
-    });
+    }).select("id, receipt_no").single();
     if (error) throw new Error(error.message);
-    // Update student balance snapshot
-    const { data: s } = await supabase.from("students").select("fee_balance").eq("id", data.student_id).single();
-    if (s) {
-      const next = Math.max(0, (s.fee_balance ?? 0) - data.amount_fcfa);
-      await supabase.from("students").update({ fee_balance: next }).eq("id", data.student_id);
-    }
-    return { ok: true };
+    return { ok: true, id: inserted?.id, receipt_no: inserted?.receipt_no };
   });
 
 export const deletePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ context, data }) => {
-    const { supabase } = context;
-    const { data: p } = await supabase.from("payments").select("student_id, amount_fcfa").eq("id", data.id).single();
-    const { error } = await supabase.from("payments").delete().eq("id", data.id);
+    const { error } = await context.supabase.from("payments").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
-    if (p) {
-      const { data: s } = await supabase.from("students").select("fee_balance").eq("id", p.student_id).single();
-      if (s) {
-        await supabase.from("students").update({ fee_balance: (s.fee_balance ?? 0) + p.amount_fcfa }).eq("id", p.student_id);
-      }
-    }
     return { ok: true };
   });
 
