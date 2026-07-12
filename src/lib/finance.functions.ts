@@ -124,3 +124,134 @@ export const financeSummary = createServerFn({ method: "GET" })
     const outstanding = (studs.data ?? []).reduce((a, r) => a + (r.fee_balance ?? 0), 0);
     return { collected, outstanding, students: studs.data?.length ?? 0, thisMonth };
   });
+
+// ─── Invoices (student_fees) ────────────────────────────────────────────────
+
+export const listStudentFees = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { studentId?: string; className?: string }) => d)
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) return [];
+    let q = supabase
+      .from("student_fees")
+      .select("id, student_id, fee_structure_id, label, amount_fcfa, discount_fcfa, academic_year, due_date, note, created_at, students(first_name,last_name,matricule,class_name)")
+      .eq("school_id", schoolId)
+      .order("due_date", { ascending: true, nullsFirst: false });
+    if (data.studentId) q = q.eq("student_id", data.studentId);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    const filtered = data.className
+      ? (rows ?? []).filter((r) => (r as { students?: { class_name?: string } }).students?.class_name === data.className)
+      : (rows ?? []);
+    return filtered;
+  });
+
+export const upsertStudentFee = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id?: string; student_id: string; fee_structure_id?: string | null; label: string; amount_fcfa: number; discount_fcfa?: number; academic_year?: string; due_date?: string; note?: string }) => d)
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) throw new Error("No school assigned");
+    const row = {
+      school_id: schoolId,
+      student_id: data.student_id,
+      fee_structure_id: data.fee_structure_id ?? null,
+      label: data.label,
+      amount_fcfa: data.amount_fcfa,
+      discount_fcfa: data.discount_fcfa ?? 0,
+      academic_year: data.academic_year ?? null,
+      due_date: data.due_date ?? null,
+      note: data.note ?? null,
+      created_by: userId,
+    };
+    const { error } = data.id
+      ? await supabase.from("student_fees").update(row).eq("id", data.id)
+      : await supabase.from("student_fees").insert(row);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteStudentFee = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase.from("student_fees").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const bulkAssignFee = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { class_name: string; fee_structure_id?: string; label?: string; amount_fcfa?: number; academic_year?: string; due_date?: string }) => d)
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) throw new Error("No school assigned");
+
+    let label = data.label;
+    let amount = data.amount_fcfa;
+    let year = data.academic_year;
+    if (data.fee_structure_id) {
+      const { data: fs } = await supabase.from("fee_structures")
+        .select("label, amount_fcfa, academic_year")
+        .eq("id", data.fee_structure_id).single();
+      if (fs) { label = label ?? fs.label; amount = amount ?? fs.amount_fcfa; year = year ?? fs.academic_year ?? undefined; }
+    }
+    if (!label || !amount) throw new Error("Missing label or amount");
+
+    const { data: students, error: se } = await supabase
+      .from("students").select("id")
+      .eq("school_id", schoolId).eq("class_name", data.class_name).eq("status", "active");
+    if (se) throw new Error(se.message);
+    if (!students?.length) return { ok: true, count: 0 };
+
+    const rows = students.map((s) => ({
+      school_id: schoolId,
+      student_id: s.id,
+      fee_structure_id: data.fee_structure_id ?? null,
+      label: label!,
+      amount_fcfa: amount!,
+      discount_fcfa: 0,
+      academic_year: year ?? null,
+      due_date: data.due_date ?? null,
+      created_by: userId,
+    }));
+    const { error } = await supabase.from("student_fees").insert(rows);
+    if (error) throw new Error(error.message);
+    return { ok: true, count: rows.length };
+  });
+
+export const getPaymentReceipt = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) throw new Error("No school");
+    const { data: p, error } = await supabase
+      .from("payments")
+      .select("id, amount_fcfa, method, reference, note, paid_at, receipt_no, student_id, students(first_name,last_name,matricule,class_name,fee_balance)")
+      .eq("id", data.id).eq("school_id", schoolId).single();
+    if (error) throw new Error(error.message);
+    const { data: school } = await supabase
+      .from("schools").select("name, code, city, region, motto").eq("id", schoolId).single();
+    const { data: cashier } = await supabase
+      .from("profiles").select("full_name").eq("id", userId).maybeSingle();
+    return { payment: p, school, cashier };
+  });
+
+export const recomputeAllBalances = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) throw new Error("No school");
+    const { data: students } = await supabase.from("students").select("id").eq("school_id", schoolId);
+    for (const s of students ?? []) {
+      await supabase.rpc("recompute_student_balance", { _student_id: s.id });
+    }
+    return { ok: true, count: students?.length ?? 0 };
+  });
