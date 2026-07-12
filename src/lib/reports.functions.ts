@@ -18,8 +18,6 @@ export const getGradesForClass = createServerFn({ method: "GET" })
       .eq("status", "active")
       .order("last_name");
     if (sErr) throw new Error(sErr.message);
-    const className = student.class_name;
-    if (!className) throw new Error("Student has no class assigned");
 
     const ids = (students ?? []).map((s) => s.id);
     const { data: grades } = ids.length
