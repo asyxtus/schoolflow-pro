@@ -88,6 +88,111 @@ export type Database = {
           },
         ]
       }
+      attendance: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          note: string | null
+          recorded_by: string | null
+          school_id: string
+          status: Database["public"]["Enums"]["attendance_status"]
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          note?: string | null
+          recorded_by?: string | null
+          school_id: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          note?: string | null
+          recorded_by?: string | null
+          school_id?: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grades: {
+        Row: {
+          ca_score: number | null
+          created_at: string
+          exam_score: number | null
+          id: string
+          remark: string | null
+          school_id: string
+          sequence: number
+          student_id: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          ca_score?: number | null
+          created_at?: string
+          exam_score?: number | null
+          id?: string
+          remark?: string | null
+          school_id: string
+          sequence: number
+          student_id: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          ca_score?: number | null
+          created_at?: string
+          exam_score?: number | null
+          id?: string
+          remark?: string | null
+          school_id?: string
+          sequence?: number
+          student_id?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grades_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guardians: {
         Row: {
           address: string | null
@@ -144,6 +249,47 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          audience: Database["public"]["Enums"]["message_audience"]
+          audience_class: string | null
+          body: string
+          created_at: string
+          id: string
+          school_id: string
+          sender_id: string | null
+          subject: string
+        }
+        Insert: {
+          audience?: Database["public"]["Enums"]["message_audience"]
+          audience_class?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          school_id: string
+          sender_id?: string | null
+          subject: string
+        }
+        Update: {
+          audience?: Database["public"]["Enums"]["message_audience"]
+          audience_class?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          school_id?: string
+          sender_id?: string | null
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
             referencedColumns: ["id"]
           },
         ]
@@ -302,6 +448,53 @@ export type Database = {
           },
         ]
       }
+      timetable_slots: {
+        Row: {
+          class_name: string
+          created_at: string
+          day_of_week: number
+          id: string
+          period: number
+          room: string | null
+          school_id: string
+          subject: string
+          teacher: string | null
+          updated_at: string
+        }
+        Insert: {
+          class_name: string
+          created_at?: string
+          day_of_week: number
+          id?: string
+          period: number
+          room?: string | null
+          school_id: string
+          subject: string
+          teacher?: string | null
+          updated_at?: string
+        }
+        Update: {
+          class_name?: string
+          created_at?: string
+          day_of_week?: number
+          id?: string
+          period?: number
+          room?: string | null
+          school_id?: string
+          subject?: string
+          teacher?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_slots_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -382,7 +575,9 @@ export type Database = {
         | "secretary"
         | "parent"
         | "student"
+      attendance_status: "present" | "absent" | "late" | "excused"
       gender: "male" | "female"
+      message_audience: "all" | "class" | "staff" | "guardians"
       student_status:
         | "active"
         | "inactive"
@@ -535,7 +730,9 @@ export const Constants = {
         "parent",
         "student",
       ],
+      attendance_status: ["present", "absent", "late", "excused"],
       gender: ["male", "female"],
+      message_audience: ["all", "class", "staff", "guardians"],
       student_status: [
         "active",
         "inactive",
