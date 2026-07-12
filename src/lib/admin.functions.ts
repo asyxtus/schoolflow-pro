@@ -10,7 +10,7 @@ export type AppRole =
   | "bursar"
   | "teacher"
   | "secretary"
-  | "guardian"
+  | "parent"
   | "student";
 
 export const MANAGEABLE_ROLES: AppRole[] = [
@@ -20,19 +20,7 @@ export const MANAGEABLE_ROLES: AppRole[] = [
   "secretary",
 ];
 
-async function assertManager(supabase: Awaited<ReturnType<typeof requireManager>>["supabase"], userId: string, schoolId: string) {
-  const { data, error } = await supabase.rpc("can_manage_school_data", {
-    _user_id: userId,
-    _school_id: schoolId,
-  });
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("Only principals can manage staff");
-}
-
-// Small helper to keep types honest
-async function requireManager(ctx: { supabase: unknown; userId: string }) {
-  return { supabase: ctx.supabase as never, userId: ctx.userId };
-}
+type SB = Awaited<ReturnType<typeof requireSupabaseAuth.server extends never ? never : never>>;
 
 // ─── Staff list ────────────────────────────────────────────────────
 export const listStaff = createServerFn({ method: "GET" })
