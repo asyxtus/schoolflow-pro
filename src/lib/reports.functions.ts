@@ -210,6 +210,8 @@ export const computeBulletin = createServerFn({ method: "GET" })
       .eq("id", data.studentId)
       .single();
     if (sErr) throw new Error(sErr.message);
+    const className = student.class_name;
+    if (!className) throw new Error("Student has no class assigned");
 
     const { data: school } = await supabase
       .from("schools")
