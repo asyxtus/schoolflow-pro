@@ -723,6 +723,7 @@ export type Database = {
           section: string | null
           status: Database["public"]["Enums"]["student_status"]
           updated_at: string
+          wallet_balance: number
         }
         Insert: {
           attendance_rate?: number
@@ -744,6 +745,7 @@ export type Database = {
           section?: string | null
           status?: Database["public"]["Enums"]["student_status"]
           updated_at?: string
+          wallet_balance?: number
         }
         Update: {
           attendance_rate?: number
@@ -765,6 +767,7 @@ export type Database = {
           section?: string | null
           status?: Database["public"]["Enums"]["student_status"]
           updated_at?: string
+          wallet_balance?: number
         }
         Relationships: [
           {
@@ -896,6 +899,66 @@ export type Database = {
           },
         ]
       }
+      wallet_transactions: {
+        Row: {
+          amount_fcfa: number
+          created_at: string
+          id: string
+          kind: string
+          method: string
+          note: string | null
+          occurred_at: string
+          recorded_by: string | null
+          reference: string | null
+          school_id: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_fcfa: number
+          created_at?: string
+          id?: string
+          kind: string
+          method?: string
+          note?: string | null
+          occurred_at?: string
+          recorded_by?: string | null
+          reference?: string | null
+          school_id: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_fcfa?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          method?: string
+          note?: string | null
+          occurred_at?: string
+          recorded_by?: string | null
+          reference?: string | null
+          school_id?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -938,6 +1001,10 @@ export type Database = {
         Returns: string
       }
       recompute_student_balance: {
+        Args: { _student_id: string }
+        Returns: undefined
+      }
+      recompute_student_wallet: {
         Args: { _student_id: string }
         Returns: undefined
       }
