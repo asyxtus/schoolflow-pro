@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Wallet, Receipt, TrendingUp, Users, Plus, Trash2 } from "lucide-react";
+import { Wallet, Receipt, TrendingUp, Users, Plus, Trash2, Printer, Download, RefreshCw, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
@@ -26,6 +26,8 @@ import { getStudents } from "@/lib/students.functions";
 import {
   financeSummary, listFeeStructures, upsertFeeStructure, deleteFeeStructure,
   listPayments, recordPayment, deletePayment, type PaymentMethod,
+  listStudentFees, upsertStudentFee, deleteStudentFee, bulkAssignFee,
+  recomputeAllBalances,
 } from "@/lib/finance.functions";
 
 export const Route = createFileRoute("/_authenticated/finance")({
@@ -33,6 +35,9 @@ export const Route = createFileRoute("/_authenticated/finance")({
 });
 
 const fmt = (n: number) => new Intl.NumberFormat("fr-FR").format(n).replace(/,/g, " ") + " FCFA";
+const METHODS: Array<PaymentMethod> = ["cash", "momo", "bank", "cheque", "other"];
+
+type Student = { id: string; first_name: string; last_name: string; matricule: string | null; class_name: string | null; fee_balance: number };
 
 function FinancePage() {
   const qc = useQueryClient();
@@ -44,17 +49,67 @@ function FinancePage() {
   const recFn = useServerFn(recordPayment);
   const delPay = useServerFn(deletePayment);
   const studentsFn = useServerFn(getStudents);
+  const invFn = useServerFn(listStudentFees);
+  const upsertInv = useServerFn(upsertStudentFee);
+  const delInv = useServerFn(deleteStudentFee);
+  const bulkFn = useServerFn(bulkAssignFee);
+  const recompute = useServerFn(recomputeAllBalances);
+
+  const [filter, setFilter] = useState<{ q: string; method: PaymentMethod | "all"; from: string; to: string }>({
+    q: "", method: "all", from: "", to: "",
+  });
 
   const summaryQ = useQuery({ queryKey: ["finance-summary"], queryFn: () => summaryFn() });
   const feesQ = useQuery({ queryKey: ["fee-structures"], queryFn: () => feesFn() });
-  const paysQ = useQuery({ queryKey: ["payments"], queryFn: () => paysFn({ data: { limit: 200 } }) });
+  const paysQ = useQuery({
+    queryKey: ["payments", filter],
+    queryFn: () => paysFn({ data: { limit: 500, q: filter.q, method: filter.method, from: filter.from || undefined, to: filter.to || undefined } }),
+  });
   const studentsQ = useQuery({ queryKey: ["students"], queryFn: () => studentsFn() });
+  const invQ = useQuery({ queryKey: ["student-fees"], queryFn: () => invFn({ data: {} }) });
 
   const refetchAll = () => {
     qc.invalidateQueries({ queryKey: ["finance-summary"] });
     qc.invalidateQueries({ queryKey: ["payments"] });
     qc.invalidateQueries({ queryKey: ["students"] });
+    qc.invalidateQueries({ queryKey: ["student-fees"] });
     qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+  };
+
+  const classNames = useMemo(() => {
+    const set = new Set<string>();
+    (studentsQ.data ?? []).forEach((s) => { if (s.class_name) set.add(s.class_name); });
+    return Array.from(set).sort();
+  }, [studentsQ.data]);
+
+  const exportPaymentsCsv = () => {
+    const rows = paysQ.data ?? [];
+    const header = ["Receipt", "Date", "Student", "Matricule", "Class", "Method", "Reference", "Amount FCFA", "Note"];
+    const csv = [header.join(",")].concat(
+      rows.map((p) => {
+        const s = (p as { students?: { first_name?: string; last_name?: string; matricule?: string; class_name?: string } }).students;
+        return [
+          p.receipt_no ?? "",
+          new Date(p.paid_at).toISOString(),
+          `${s?.first_name ?? ""} ${s?.last_name ?? ""}`.trim(),
+          s?.matricule ?? "",
+          s?.class_name ?? "",
+          p.method,
+          p.reference ?? "",
+          String(p.amount_fcfa),
+          (p.note ?? "").replace(/[\n,]/g, " "),
+        ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",");
+      })
+    ).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `payments-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const openReceipt = (id: string) => {
+    window.open(`/finance/receipt/${id}`, "_blank", "noopener");
   };
 
   return (
@@ -62,6 +117,18 @@ function FinancePage() {
       <PageHeader
         title="Finance"
         description="Fee structures, payments, and collection tracking"
+        actions={
+          <Button
+            variant="outline" size="sm"
+            onClick={async () => {
+              await recompute();
+              refetchAll();
+              toast.success("Balances recomputed");
+            }}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />Recompute balances
+          </Button>
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -74,26 +141,56 @@ function FinancePage() {
       <Tabs defaultValue="payments">
         <TabsList>
           <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="structures">Fee structures</TabsTrigger>
           <TabsTrigger value="balances">Balances</TabsTrigger>
         </TabsList>
 
         <TabsContent value="payments" className="space-y-3">
-          <div className="flex justify-end">
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="grid gap-1">
+              <Label className="text-xs">Search</Label>
+              <Input value={filter.q} onChange={(e) => setFilter({ ...filter, q: e.target.value })} placeholder="Name, receipt, ref…" className="h-9 w-56" />
+            </div>
+            <div className="grid gap-1">
+              <Label className="text-xs">Method</Label>
+              <Select value={filter.method} onValueChange={(v) => setFilter({ ...filter, method: v as PaymentMethod | "all" })}>
+                <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {METHODS.map((m) => <SelectItem key={m} value={m}>{m.toUpperCase()}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1">
+              <Label className="text-xs">From</Label>
+              <Input type="date" value={filter.from} onChange={(e) => setFilter({ ...filter, from: e.target.value })} className="h-9 w-40" />
+            </div>
+            <div className="grid gap-1">
+              <Label className="text-xs">To</Label>
+              <Input type="date" value={filter.to} onChange={(e) => setFilter({ ...filter, to: e.target.value })} className="h-9 w-40" />
+            </div>
+            <div className="ml-auto flex items-end gap-2">
+              <Button variant="outline" size="sm" onClick={exportPaymentsCsv} disabled={!paysQ.data?.length}>
+                <Download className="mr-2 h-4 w-4" />Export CSV
+              </Button>
             <RecordPaymentDialog
               students={studentsQ.data ?? []}
               onSubmit={async (v) => {
-                await recFn({ data: v });
+                const res = await recFn({ data: v });
                 refetchAll();
                 qc.invalidateQueries({ queryKey: ["payments"] });
-                toast.success("Payment recorded");
+                toast.success("Payment recorded", {
+                  action: res?.id ? { label: "Print receipt", onClick: () => openReceipt(res.id!) } : undefined,
+                });
               }}
             />
+            </div>
           </div>
           {paysQ.isLoading ? (
             <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">Loading…</CardContent></Card>
           ) : !(paysQ.data?.length) ? (
-            <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">No payments recorded yet.</CardContent></Card>
+            <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">No payments match your filters.</CardContent></Card>
           ) : (
             <Card>
               <CardContent className="p-0">
@@ -108,6 +205,7 @@ function FinancePage() {
                             <span className="ml-2 text-xs text-muted-foreground">{s?.matricule} · {s?.class_name}</span>
                           </div>
                           <div className="text-xs text-muted-foreground">
+                            {p.receipt_no && <span className="mr-2 font-mono">{p.receipt_no}</span>}
                             {new Date(p.paid_at).toLocaleString()} · {p.method.toUpperCase()}
                             {p.reference && ` · Ref ${p.reference}`}
                           </div>
@@ -116,6 +214,9 @@ function FinancePage() {
                         <div className="text-right">
                           <div className="font-semibold text-primary">{fmt(p.amount_fcfa)}</div>
                         </div>
+                        <Button size="icon" variant="ghost" aria-label="Receipt" onClick={() => openReceipt(p.id)}>
+                          <Printer className="h-4 w-4 text-muted-foreground" />
+                        </Button>
                         <Button
                           size="icon" variant="ghost"
                           onClick={async () => {
@@ -131,8 +232,70 @@ function FinancePage() {
                     );
                   })}
                 </div>
+                <div className="border-t p-3 text-right text-sm">
+                  Total: <span className="font-semibold text-foreground">{fmt(paysQ.data.reduce((a, r) => a + r.amount_fcfa, 0))}</span>
+                </div>
               </CardContent>
             </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="invoices" className="space-y-3">
+          <div className="flex flex-wrap justify-end gap-2">
+            <BulkAssignDialog
+              classNames={classNames}
+              feeStructures={feesQ.data ?? []}
+              onSubmit={async (v) => {
+                const r = await bulkFn({ data: v });
+                refetchAll();
+                toast.success(`Assigned to ${r.count} students`);
+              }}
+            />
+            <InvoiceDialog
+              students={studentsQ.data ?? []}
+              feeStructures={feesQ.data ?? []}
+              onSubmit={async (v) => {
+                await upsertInv({ data: v });
+                refetchAll();
+                toast.success("Invoice saved");
+              }}
+            />
+          </div>
+          {!(invQ.data?.length) ? (
+            <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">No fee assignments yet. Create one or bulk-assign a fee structure to a class.</CardContent></Card>
+          ) : (
+            <Card><CardContent className="p-0"><div className="divide-y">
+              {invQ.data.map((r) => {
+                const s = (r as { students?: { first_name?: string; last_name?: string; matricule?: string; class_name?: string } }).students;
+                const net = Math.max(0, r.amount_fcfa - (r.discount_fcfa ?? 0));
+                const overdue = r.due_date && new Date(r.due_date) < new Date();
+                return (
+                  <div key={r.id} className="flex items-center gap-3 p-4">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1">
+                      <div className="font-medium">
+                        {s?.first_name} {s?.last_name}
+                        <span className="ml-2 text-xs text-muted-foreground">{s?.matricule} · {s?.class_name}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {r.label}
+                        {r.academic_year && ` · ${r.academic_year}`}
+                        {r.due_date && ` · Due ${new Date(r.due_date).toLocaleDateString()}`}
+                      </div>
+                    </div>
+                    {overdue && <Badge variant="destructive">Overdue</Badge>}
+                    <div className="text-right">
+                      <div className="font-semibold">{fmt(net)}</div>
+                      {r.discount_fcfa > 0 && <div className="text-xs text-muted-foreground">-{fmt(r.discount_fcfa)} discount</div>}
+                    </div>
+                    <Button size="icon" variant="ghost" aria-label="Delete"
+                      onClick={async () => { await delInv({ data: { id: r.id } }); refetchAll(); }}>
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div></CardContent></Card>
           )}
         </TabsContent>
 
