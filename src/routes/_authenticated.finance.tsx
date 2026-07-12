@@ -498,3 +498,183 @@ function BalancesTable({ students }: { students: Array<{ id: string; first_name:
     </div>
   );
 }
+
+type FeeStructure = { id: string; class_name: string; label: string; amount_fcfa: number; academic_year: string | null };
+
+function InvoiceDialog({
+  students, feeStructures, onSubmit,
+}: {
+  students: Student[];
+  feeStructures: FeeStructure[];
+  onSubmit: (v: { student_id: string; fee_structure_id?: string | null; label: string; amount_fcfa: number; discount_fcfa?: number; academic_year?: string; due_date?: string; note?: string }) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [studentId, setStudentId] = useState("");
+  const [structureId, setStructureId] = useState<string>("");
+  const [label, setLabel] = useState("");
+  const [amount, setAmount] = useState("");
+  const [discount, setDiscount] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const applyStructure = (id: string) => {
+    setStructureId(id);
+    const s = feeStructures.find((f) => f.id === id);
+    if (s) { setLabel(s.label); setAmount(String(s.amount_fcfa)); }
+  };
+
+  const submit = async () => {
+    const amt = Number(amount);
+    if (!studentId || !label || !amt) { toast.error("Fill student, label and amount"); return; }
+    setBusy(true);
+    try {
+      await onSubmit({
+        student_id: studentId,
+        fee_structure_id: structureId || null,
+        label,
+        amount_fcfa: amt,
+        discount_fcfa: Number(discount) || 0,
+        due_date: dueDate || undefined,
+        note: note || undefined,
+      });
+      setOpen(false);
+      setStudentId(""); setStructureId(""); setLabel(""); setAmount(""); setDiscount(""); setDueDate(""); setNote("");
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline"><Plus className="mr-2 h-4 w-4" />New invoice</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Assign fee to student</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div className="grid gap-1.5">
+            <Label>Student</Label>
+            <Select value={studentId} onValueChange={setStudentId}>
+              <SelectTrigger><SelectValue placeholder="Select student" /></SelectTrigger>
+              <SelectContent>
+                {students.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.first_name} {s.last_name} — {s.class_name ?? "—"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {feeStructures.length > 0 && (
+            <div className="grid gap-1.5">
+              <Label>From fee structure (optional)</Label>
+              <Select value={structureId} onValueChange={applyStructure}>
+                <SelectTrigger><SelectValue placeholder="Pick a template" /></SelectTrigger>
+                <SelectContent>
+                  {feeStructures.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.class_name} · {f.label} — {fmt(f.amount_fcfa)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div className="grid gap-1.5"><Label>Label</Label><Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Tuition — Term 1" /></div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="grid gap-1.5"><Label>Amount (FCFA)</Label><Input type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+            <div className="grid gap-1.5"><Label>Discount (FCFA)</Label><Input type="number" min="0" value={discount} onChange={(e) => setDiscount(e.target.value)} /></div>
+            <div className="grid gap-1.5"><Label>Due date</Label><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
+          </div>
+          <div className="grid gap-1.5"><Label>Note (optional)</Label><Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={submit} disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function BulkAssignDialog({
+  classNames, feeStructures, onSubmit,
+}: {
+  classNames: string[];
+  feeStructures: FeeStructure[];
+  onSubmit: (v: { class_name: string; fee_structure_id?: string; label?: string; amount_fcfa?: number; academic_year?: string; due_date?: string }) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [className, setClassName] = useState("");
+  const [structureId, setStructureId] = useState("");
+  const [label, setLabel] = useState("");
+  const [amount, setAmount] = useState("");
+  const [year, setYear] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    if (!className) { toast.error("Pick a class"); return; }
+    if (!structureId && (!label || !amount)) { toast.error("Pick a fee structure or provide label + amount"); return; }
+    setBusy(true);
+    try {
+      await onSubmit({
+        class_name: className,
+        fee_structure_id: structureId || undefined,
+        label: label || undefined,
+        amount_fcfa: amount ? Number(amount) : undefined,
+        academic_year: year || undefined,
+        due_date: dueDate || undefined,
+      });
+      setOpen(false);
+      setClassName(""); setStructureId(""); setLabel(""); setAmount(""); setYear(""); setDueDate("");
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline"><Users className="mr-2 h-4 w-4" />Bulk assign to class</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Assign fee to a whole class</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div className="grid gap-1.5">
+            <Label>Class</Label>
+            <Select value={className} onValueChange={setClassName}>
+              <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
+              <SelectContent>
+                {classNames.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {feeStructures.length > 0 && (
+            <div className="grid gap-1.5">
+              <Label>Fee structure</Label>
+              <Select value={structureId} onValueChange={setStructureId}>
+                <SelectTrigger><SelectValue placeholder="Optional template" /></SelectTrigger>
+                <SelectContent>
+                  {feeStructures.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.class_name} · {f.label} — {fmt(f.amount_fcfa)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div className="text-xs text-muted-foreground">Or override:</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5"><Label>Label</Label><Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Tuition — Term 1" /></div>
+            <div className="grid gap-1.5"><Label>Amount (FCFA)</Label><Input type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5"><Label>Academic year</Label><Input value={year} onChange={(e) => setYear(e.target.value)} placeholder="2025/2026" /></div>
+            <div className="grid gap-1.5"><Label>Due date</Label><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={submit} disabled={busy}>{busy ? "Assigning…" : "Assign to class"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
