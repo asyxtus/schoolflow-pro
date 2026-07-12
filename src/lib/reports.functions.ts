@@ -18,6 +18,8 @@ export const getGradesForClass = createServerFn({ method: "GET" })
       .eq("status", "active")
       .order("last_name");
     if (sErr) throw new Error(sErr.message);
+    const className = student.class_name;
+    if (!className) throw new Error("Student has no class assigned");
 
     const ids = (students ?? []).map((s) => s.id);
     const { data: grades } = ids.length
@@ -221,7 +223,7 @@ export const computeBulletin = createServerFn({ method: "GET" })
       .from("subject_coefficients")
       .select("subject, coefficient, teacher_name")
       .eq("school_id", schoolId)
-      .eq("class_name", student.class_name);
+      .eq("class_name", className);
 
     const coefMap = new Map<string, { coefficient: number; teacher_name: string | null }>();
     (coefs ?? []).forEach((c) =>
@@ -236,7 +238,7 @@ export const computeBulletin = createServerFn({ method: "GET" })
       .from("students")
       .select("id, first_name, last_name")
       .eq("school_id", schoolId)
-      .eq("class_name", student.class_name)
+      .eq("class_name", className)
       .eq("status", "active");
 
     const classIds = (classStudents ?? []).map((s) => s.id);
