@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Settings,
   School,
+  Wallet,
 } from "lucide-react";
 
 import {
@@ -52,6 +53,10 @@ const groups = [
   {
     label: "Communication",
     items: [{ title: "Messages", url: "/messages", icon: MessageSquare }],
+  },
+  {
+    label: "Operations",
+    items: [{ title: "Finance", url: "/finance", icon: Wallet }],
   },
 ];
 
