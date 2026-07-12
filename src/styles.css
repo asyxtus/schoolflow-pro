@@ -145,3 +145,11 @@
     color: var(--color-foreground);
   }
 }
+
+@media print {
+  header, [data-sidebar="sidebar"], [data-slot="sidebar-container"], [data-slot="sidebar-rail"] {
+    display: none !important;
+  }
+  main { padding: 0 !important; }
+  body { background: #fff !important; }
+}
