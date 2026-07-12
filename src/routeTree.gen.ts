@@ -13,6 +13,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
+import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated.wallet'
 import { Route as AuthenticatedTimetableRouteImport } from './routes/_authenticated.timetable'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated.students'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated.reports'
@@ -49,6 +50,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedWalletRoute = AuthenticatedWalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedTimetableRoute = AuthenticatedTimetableRouteImport.update({
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/timetable': typeof AuthenticatedTimetableRoute
+  '/wallet': typeof AuthenticatedWalletRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
   '/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
   '/settings/audit': typeof AuthenticatedSettingsAuditRoute
@@ -187,6 +194,7 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/timetable': typeof AuthenticatedTimetableRoute
+  '/wallet': typeof AuthenticatedWalletRoute
   '/': typeof AuthenticatedIndexRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
   '/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
@@ -212,6 +220,7 @@ export interface FileRoutesById {
   '/_authenticated/reports': typeof AuthenticatedReportsRouteWithChildren
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
   '/_authenticated/timetable': typeof AuthenticatedTimetableRoute
+  '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admissions/new': typeof AuthenticatedAdmissionsNewRoute
   '/_authenticated/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
@@ -238,6 +247,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/students'
     | '/timetable'
+    | '/wallet'
     | '/admissions/new'
     | '/reports/coefficients'
     | '/settings/audit'
@@ -260,6 +270,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/students'
     | '/timetable'
+    | '/wallet'
     | '/'
     | '/admissions/new'
     | '/reports/coefficients'
@@ -284,6 +295,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports'
     | '/_authenticated/students'
     | '/_authenticated/timetable'
+    | '/_authenticated/wallet'
     | '/_authenticated/'
     | '/_authenticated/admissions/new'
     | '/_authenticated/reports/coefficients'
@@ -330,6 +342,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/wallet': {
+      id: '/_authenticated/wallet'
+      path: '/wallet'
+      fullPath: '/wallet'
+      preLoaderRoute: typeof AuthenticatedWalletRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/timetable': {
@@ -524,6 +543,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRouteWithChildren
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
   AuthenticatedTimetableRoute: typeof AuthenticatedTimetableRoute
+  AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedSettingsAuditRoute: typeof AuthenticatedSettingsAuditRoute
   AuthenticatedSettingsUsersRoute: typeof AuthenticatedSettingsUsersRoute
@@ -541,6 +561,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReportsRoute: AuthenticatedReportsRouteWithChildren,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
   AuthenticatedTimetableRoute: AuthenticatedTimetableRoute,
+  AuthenticatedWalletRoute: AuthenticatedWalletRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedSettingsAuditRoute: AuthenticatedSettingsAuditRoute,
   AuthenticatedSettingsUsersRoute: AuthenticatedSettingsUsersRoute,

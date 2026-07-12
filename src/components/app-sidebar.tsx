@@ -13,6 +13,7 @@ import {
   Settings,
   School,
   Wallet,
+  PiggyBank,
   ShieldCheck,
   History,
   ScrollText,
@@ -60,7 +61,10 @@ const groups = [
   },
   {
     label: "Operations",
-    items: [{ title: "Finance", url: "/finance", icon: Wallet }],
+    items: [
+      { title: "Finance", url: "/finance", icon: Wallet },
+      { title: "Student Wallet", url: "/wallet", icon: PiggyBank },
+    ],
   },
   {
     label: "Administration",
