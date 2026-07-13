@@ -554,6 +554,10 @@ export type Database = {
           name: string
           region: string | null
           updated_at: string
+          wallet_default_daily_limit: number | null
+          wallet_default_monthly_limit: number | null
+          wallet_default_per_txn_limit: number | null
+          wallet_default_weekly_limit: number | null
         }
         Insert: {
           city?: string | null
@@ -565,6 +569,10 @@ export type Database = {
           name: string
           region?: string | null
           updated_at?: string
+          wallet_default_daily_limit?: number | null
+          wallet_default_monthly_limit?: number | null
+          wallet_default_per_txn_limit?: number | null
+          wallet_default_weekly_limit?: number | null
         }
         Update: {
           city?: string | null
@@ -576,6 +584,10 @@ export type Database = {
           name?: string
           region?: string | null
           updated_at?: string
+          wallet_default_daily_limit?: number | null
+          wallet_default_monthly_limit?: number | null
+          wallet_default_per_txn_limit?: number | null
+          wallet_default_weekly_limit?: number | null
         }
         Relationships: []
       }
@@ -724,6 +736,10 @@ export type Database = {
           status: Database["public"]["Enums"]["student_status"]
           updated_at: string
           wallet_balance: number
+          wallet_daily_limit: number | null
+          wallet_monthly_limit: number | null
+          wallet_per_txn_limit: number | null
+          wallet_weekly_limit: number | null
         }
         Insert: {
           attendance_rate?: number
@@ -746,6 +762,10 @@ export type Database = {
           status?: Database["public"]["Enums"]["student_status"]
           updated_at?: string
           wallet_balance?: number
+          wallet_daily_limit?: number | null
+          wallet_monthly_limit?: number | null
+          wallet_per_txn_limit?: number | null
+          wallet_weekly_limit?: number | null
         }
         Update: {
           attendance_rate?: number
@@ -768,6 +788,10 @@ export type Database = {
           status?: Database["public"]["Enums"]["student_status"]
           updated_at?: string
           wallet_balance?: number
+          wallet_daily_limit?: number | null
+          wallet_monthly_limit?: number | null
+          wallet_per_txn_limit?: number | null
+          wallet_weekly_limit?: number | null
         }
         Relationships: [
           {
@@ -903,11 +927,14 @@ export type Database = {
         Row: {
           amount_fcfa: number
           created_at: string
+          guardian_approval_note: string | null
+          guardian_approved: boolean
           id: string
           kind: string
           method: string
           note: string | null
           occurred_at: string
+          over_limit: boolean
           recorded_by: string | null
           reference: string | null
           school_id: string
@@ -917,11 +944,14 @@ export type Database = {
         Insert: {
           amount_fcfa: number
           created_at?: string
+          guardian_approval_note?: string | null
+          guardian_approved?: boolean
           id?: string
           kind: string
           method?: string
           note?: string | null
           occurred_at?: string
+          over_limit?: boolean
           recorded_by?: string | null
           reference?: string | null
           school_id: string
@@ -931,11 +961,14 @@ export type Database = {
         Update: {
           amount_fcfa?: number
           created_at?: string
+          guardian_approval_note?: string | null
+          guardian_approved?: boolean
           id?: string
           kind?: string
           method?: string
           note?: string | null
           occurred_at?: string
+          over_limit?: boolean
           recorded_by?: string | null
           reference?: string | null
           school_id?: string
