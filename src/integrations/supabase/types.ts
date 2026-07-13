@@ -189,6 +189,307 @@ export type Database = {
           },
         ]
       }
+      boarding_assignments: {
+        Row: {
+          active: boolean
+          assigned_on: string
+          bed_number: string | null
+          created_at: string
+          dormitory_id: string
+          id: string
+          released_on: string | null
+          room_id: string | null
+          school_id: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          assigned_on?: string
+          bed_number?: string | null
+          created_at?: string
+          dormitory_id: string
+          id?: string
+          released_on?: string | null
+          room_id?: string | null
+          school_id: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          assigned_on?: string
+          bed_number?: string | null
+          created_at?: string
+          dormitory_id?: string
+          id?: string
+          released_on?: string | null
+          room_id?: string | null
+          school_id?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boarding_assignments_dormitory_id_fkey"
+            columns: ["dormitory_id"]
+            isOneToOne: false
+            referencedRelation: "dormitories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_assignments_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "dorm_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_assignments_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_assignments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boarding_exeats: {
+        Row: {
+          actual_return_at: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          depart_at: string
+          destination: string | null
+          guardian_approval_note: string | null
+          guardian_approved: boolean
+          guardian_name: string | null
+          guardian_phone: string | null
+          id: string
+          notes: string | null
+          reason: string
+          return_by: string
+          school_id: string
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          actual_return_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          depart_at: string
+          destination?: string | null
+          guardian_approval_note?: string | null
+          guardian_approved?: boolean
+          guardian_name?: string | null
+          guardian_phone?: string | null
+          id?: string
+          notes?: string | null
+          reason: string
+          return_by: string
+          school_id: string
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          actual_return_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          depart_at?: string
+          destination?: string | null
+          guardian_approval_note?: string | null
+          guardian_approved?: boolean
+          guardian_name?: string | null
+          guardian_phone?: string | null
+          id?: string
+          notes?: string | null
+          reason?: string
+          return_by?: string
+          school_id?: string
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boarding_exeats_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_exeats_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_exeats_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_exeats_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boarding_roll_call: {
+        Row: {
+          created_at: string
+          dormitory_id: string
+          id: string
+          note: string | null
+          recorded_by: string | null
+          roll_date: string
+          school_id: string
+          session: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          dormitory_id: string
+          id?: string
+          note?: string | null
+          recorded_by?: string | null
+          roll_date?: string
+          school_id: string
+          session?: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          dormitory_id?: string
+          id?: string
+          note?: string | null
+          recorded_by?: string | null
+          roll_date?: string
+          school_id?: string
+          session?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boarding_roll_call_dormitory_id_fkey"
+            columns: ["dormitory_id"]
+            isOneToOne: false
+            referencedRelation: "dormitories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_roll_call_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_roll_call_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_roll_call_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boarding_visitors: {
+        Row: {
+          check_in_at: string
+          check_out_at: string | null
+          created_at: string
+          id: string
+          id_document: string | null
+          purpose: string | null
+          recorded_by: string | null
+          relationship: string | null
+          school_id: string
+          student_id: string | null
+          visitor_name: string
+          visitor_phone: string | null
+        }
+        Insert: {
+          check_in_at?: string
+          check_out_at?: string | null
+          created_at?: string
+          id?: string
+          id_document?: string | null
+          purpose?: string | null
+          recorded_by?: string | null
+          relationship?: string | null
+          school_id: string
+          student_id?: string | null
+          visitor_name: string
+          visitor_phone?: string | null
+        }
+        Update: {
+          check_in_at?: string
+          check_out_at?: string | null
+          created_at?: string
+          id?: string
+          id_document?: string | null
+          purpose?: string | null
+          recorded_by?: string | null
+          relationship?: string | null
+          school_id?: string
+          student_id?: string | null
+          visitor_name?: string
+          visitor_phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boarding_visitors_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_visitors_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_visitors_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bulletin_meta: {
         Row: {
           absences_justified: number | null
@@ -242,6 +543,101 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dorm_rooms: {
+        Row: {
+          capacity: number
+          created_at: string
+          dormitory_id: string
+          id: string
+          notes: string | null
+          room_number: string
+          school_id: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          dormitory_id: string
+          id?: string
+          notes?: string | null
+          room_number: string
+          school_id: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          dormitory_id?: string
+          id?: string
+          notes?: string | null
+          room_number?: string
+          school_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dorm_rooms_dormitory_id_fkey"
+            columns: ["dormitory_id"]
+            isOneToOne: false
+            referencedRelation: "dormitories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dorm_rooms_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dormitories: {
+        Row: {
+          capacity: number
+          created_at: string
+          gender: string
+          id: string
+          name: string
+          notes: string | null
+          school_id: string
+          updated_at: string
+          warden_name: string | null
+          warden_phone: string | null
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          gender: string
+          id?: string
+          name: string
+          notes?: string | null
+          school_id: string
+          updated_at?: string
+          warden_name?: string | null
+          warden_phone?: string | null
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          gender?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          school_id?: string
+          updated_at?: string
+          warden_name?: string | null
+          warden_phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dormitories_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
             referencedColumns: ["id"]
           },
         ]
