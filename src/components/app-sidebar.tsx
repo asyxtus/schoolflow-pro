@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   History,
   ScrollText,
+  BedDouble,
 } from "lucide-react";
 
 import {
@@ -64,6 +65,7 @@ const groups = [
     items: [
       { title: "Finance", url: "/finance", icon: Wallet },
       { title: "Student Wallet", url: "/wallet", icon: PiggyBank },
+      { title: "Boarding", url: "/boarding", icon: BedDouble },
     ],
   },
   {
