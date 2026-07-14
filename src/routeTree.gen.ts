@@ -17,7 +17,9 @@ import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedTimetableRouteImport } from './routes/_authenticated.timetable'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated.students'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated.reports'
+import { Route as AuthenticatedPayrollRouteImport } from './routes/_authenticated.payroll'
 import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated.messages'
+import { Route as AuthenticatedHrRouteImport } from './routes/_authenticated.hr'
 import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated.finance'
 import { Route as AuthenticatedClassesRouteImport } from './routes/_authenticated.classes'
 import { Route as AuthenticatedBoardingRouteImport } from './routes/_authenticated.boarding'
@@ -30,7 +32,10 @@ import { Route as AuthenticatedStudentsStudentIdRouteImport } from './routes/_au
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated.settings.users'
 import { Route as AuthenticatedSettingsAuditRouteImport } from './routes/_authenticated.settings.audit'
 import { Route as AuthenticatedReportsCoefficientsRouteImport } from './routes/_authenticated.reports.coefficients'
+import { Route as AuthenticatedPayrollRunIdRouteImport } from './routes/_authenticated.payroll.$runId'
+import { Route as AuthenticatedHrStaffIdRouteImport } from './routes/_authenticated.hr.$staffId'
 import { Route as AuthenticatedAdmissionsNewRouteImport } from './routes/_authenticated.admissions.new'
+import { Route as AuthenticatedPayrollPayslipPayslipIdRouteImport } from './routes/_authenticated.payroll.payslip.$payslipId'
 import { Route as AuthenticatedFinanceReceiptPaymentIdRouteImport } from './routes/_authenticated.finance.receipt.$paymentId'
 import { Route as AuthenticatedReportsBulletinStudentIdSequenceRouteImport } from './routes/_authenticated.reports.bulletin.$studentId.$sequence'
 
@@ -73,9 +78,19 @@ const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPayrollRoute = AuthenticatedPayrollRouteImport.update({
+  id: '/payroll',
+  path: '/payroll',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMessagesRoute = AuthenticatedMessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedHrRoute = AuthenticatedHrRouteImport.update({
+  id: '/hr',
+  path: '/hr',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedFinanceRoute = AuthenticatedFinanceRouteImport.update({
@@ -145,11 +160,28 @@ const AuthenticatedReportsCoefficientsRoute =
     path: '/coefficients',
     getParentRoute: () => AuthenticatedReportsRoute,
   } as any)
+const AuthenticatedPayrollRunIdRoute =
+  AuthenticatedPayrollRunIdRouteImport.update({
+    id: '/$runId',
+    path: '/$runId',
+    getParentRoute: () => AuthenticatedPayrollRoute,
+  } as any)
+const AuthenticatedHrStaffIdRoute = AuthenticatedHrStaffIdRouteImport.update({
+  id: '/$staffId',
+  path: '/$staffId',
+  getParentRoute: () => AuthenticatedHrRoute,
+} as any)
 const AuthenticatedAdmissionsNewRoute =
   AuthenticatedAdmissionsNewRouteImport.update({
     id: '/new',
     path: '/new',
     getParentRoute: () => AuthenticatedAdmissionsRoute,
+  } as any)
+const AuthenticatedPayrollPayslipPayslipIdRoute =
+  AuthenticatedPayrollPayslipPayslipIdRouteImport.update({
+    id: '/payslip/$payslipId',
+    path: '/payslip/$payslipId',
+    getParentRoute: () => AuthenticatedPayrollRoute,
   } as any)
 const AuthenticatedFinanceReceiptPaymentIdRoute =
   AuthenticatedFinanceReceiptPaymentIdRouteImport.update({
@@ -174,12 +206,16 @@ export interface FileRoutesByFullPath {
   '/boarding': typeof AuthenticatedBoardingRoute
   '/classes': typeof AuthenticatedClassesRoute
   '/finance': typeof AuthenticatedFinanceRouteWithChildren
+  '/hr': typeof AuthenticatedHrRouteWithChildren
   '/messages': typeof AuthenticatedMessagesRoute
+  '/payroll': typeof AuthenticatedPayrollRouteWithChildren
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/timetable': typeof AuthenticatedTimetableRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/hr/$staffId': typeof AuthenticatedHrStaffIdRoute
+  '/payroll/$runId': typeof AuthenticatedPayrollRunIdRoute
   '/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
   '/settings/audit': typeof AuthenticatedSettingsAuditRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
@@ -187,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/students/new': typeof AuthenticatedStudentsNewRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/finance/receipt/$paymentId': typeof AuthenticatedFinanceReceiptPaymentIdRoute
+  '/payroll/payslip/$payslipId': typeof AuthenticatedPayrollPayslipPayslipIdRoute
   '/reports/bulletin/$studentId/$sequence': typeof AuthenticatedReportsBulletinStudentIdSequenceRoute
 }
 export interface FileRoutesByTo {
@@ -198,13 +235,17 @@ export interface FileRoutesByTo {
   '/boarding': typeof AuthenticatedBoardingRoute
   '/classes': typeof AuthenticatedClassesRoute
   '/finance': typeof AuthenticatedFinanceRouteWithChildren
+  '/hr': typeof AuthenticatedHrRouteWithChildren
   '/messages': typeof AuthenticatedMessagesRoute
+  '/payroll': typeof AuthenticatedPayrollRouteWithChildren
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/timetable': typeof AuthenticatedTimetableRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/': typeof AuthenticatedIndexRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/hr/$staffId': typeof AuthenticatedHrStaffIdRoute
+  '/payroll/$runId': typeof AuthenticatedPayrollRunIdRoute
   '/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
   '/settings/audit': typeof AuthenticatedSettingsAuditRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
@@ -212,6 +253,7 @@ export interface FileRoutesByTo {
   '/students/new': typeof AuthenticatedStudentsNewRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/finance/receipt/$paymentId': typeof AuthenticatedFinanceReceiptPaymentIdRoute
+  '/payroll/payslip/$payslipId': typeof AuthenticatedPayrollPayslipPayslipIdRoute
   '/reports/bulletin/$studentId/$sequence': typeof AuthenticatedReportsBulletinStudentIdSequenceRoute
 }
 export interface FileRoutesById {
@@ -225,13 +267,17 @@ export interface FileRoutesById {
   '/_authenticated/boarding': typeof AuthenticatedBoardingRoute
   '/_authenticated/classes': typeof AuthenticatedClassesRoute
   '/_authenticated/finance': typeof AuthenticatedFinanceRouteWithChildren
+  '/_authenticated/hr': typeof AuthenticatedHrRouteWithChildren
   '/_authenticated/messages': typeof AuthenticatedMessagesRoute
+  '/_authenticated/payroll': typeof AuthenticatedPayrollRouteWithChildren
   '/_authenticated/reports': typeof AuthenticatedReportsRouteWithChildren
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
   '/_authenticated/timetable': typeof AuthenticatedTimetableRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/_authenticated/hr/$staffId': typeof AuthenticatedHrStaffIdRoute
+  '/_authenticated/payroll/$runId': typeof AuthenticatedPayrollRunIdRoute
   '/_authenticated/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
   '/_authenticated/settings/audit': typeof AuthenticatedSettingsAuditRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
@@ -239,6 +285,7 @@ export interface FileRoutesById {
   '/_authenticated/students_/new': typeof AuthenticatedStudentsNewRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/finance/receipt/$paymentId': typeof AuthenticatedFinanceReceiptPaymentIdRoute
+  '/_authenticated/payroll/payslip/$payslipId': typeof AuthenticatedPayrollPayslipPayslipIdRoute
   '/_authenticated/reports/bulletin/$studentId/$sequence': typeof AuthenticatedReportsBulletinStudentIdSequenceRoute
 }
 export interface FileRouteTypes {
@@ -253,12 +300,16 @@ export interface FileRouteTypes {
     | '/boarding'
     | '/classes'
     | '/finance'
+    | '/hr'
     | '/messages'
+    | '/payroll'
     | '/reports'
     | '/students'
     | '/timetable'
     | '/wallet'
     | '/admissions/new'
+    | '/hr/$staffId'
+    | '/payroll/$runId'
     | '/reports/coefficients'
     | '/settings/audit'
     | '/settings/users'
@@ -266,6 +317,7 @@ export interface FileRouteTypes {
     | '/students/new'
     | '/settings/'
     | '/finance/receipt/$paymentId'
+    | '/payroll/payslip/$payslipId'
     | '/reports/bulletin/$studentId/$sequence'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -277,13 +329,17 @@ export interface FileRouteTypes {
     | '/boarding'
     | '/classes'
     | '/finance'
+    | '/hr'
     | '/messages'
+    | '/payroll'
     | '/reports'
     | '/students'
     | '/timetable'
     | '/wallet'
     | '/'
     | '/admissions/new'
+    | '/hr/$staffId'
+    | '/payroll/$runId'
     | '/reports/coefficients'
     | '/settings/audit'
     | '/settings/users'
@@ -291,6 +347,7 @@ export interface FileRouteTypes {
     | '/students/new'
     | '/settings'
     | '/finance/receipt/$paymentId'
+    | '/payroll/payslip/$payslipId'
     | '/reports/bulletin/$studentId/$sequence'
   id:
     | '__root__'
@@ -303,13 +360,17 @@ export interface FileRouteTypes {
     | '/_authenticated/boarding'
     | '/_authenticated/classes'
     | '/_authenticated/finance'
+    | '/_authenticated/hr'
     | '/_authenticated/messages'
+    | '/_authenticated/payroll'
     | '/_authenticated/reports'
     | '/_authenticated/students'
     | '/_authenticated/timetable'
     | '/_authenticated/wallet'
     | '/_authenticated/'
     | '/_authenticated/admissions/new'
+    | '/_authenticated/hr/$staffId'
+    | '/_authenticated/payroll/$runId'
     | '/_authenticated/reports/coefficients'
     | '/_authenticated/settings/audit'
     | '/_authenticated/settings/users'
@@ -317,6 +378,7 @@ export interface FileRouteTypes {
     | '/_authenticated/students_/new'
     | '/_authenticated/settings/'
     | '/_authenticated/finance/receipt/$paymentId'
+    | '/_authenticated/payroll/payslip/$payslipId'
     | '/_authenticated/reports/bulletin/$studentId/$sequence'
   fileRoutesById: FileRoutesById
 }
@@ -384,11 +446,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/payroll': {
+      id: '/_authenticated/payroll'
+      path: '/payroll'
+      fullPath: '/payroll'
+      preLoaderRoute: typeof AuthenticatedPayrollRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/messages': {
       id: '/_authenticated/messages'
       path: '/messages'
       fullPath: '/messages'
       preLoaderRoute: typeof AuthenticatedMessagesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/hr': {
+      id: '/_authenticated/hr'
+      path: '/hr'
+      fullPath: '/hr'
+      preLoaderRoute: typeof AuthenticatedHrRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/finance': {
@@ -475,12 +551,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsCoefficientsRouteImport
       parentRoute: typeof AuthenticatedReportsRoute
     }
+    '/_authenticated/payroll/$runId': {
+      id: '/_authenticated/payroll/$runId'
+      path: '/$runId'
+      fullPath: '/payroll/$runId'
+      preLoaderRoute: typeof AuthenticatedPayrollRunIdRouteImport
+      parentRoute: typeof AuthenticatedPayrollRoute
+    }
+    '/_authenticated/hr/$staffId': {
+      id: '/_authenticated/hr/$staffId'
+      path: '/$staffId'
+      fullPath: '/hr/$staffId'
+      preLoaderRoute: typeof AuthenticatedHrStaffIdRouteImport
+      parentRoute: typeof AuthenticatedHrRoute
+    }
     '/_authenticated/admissions/new': {
       id: '/_authenticated/admissions/new'
       path: '/new'
       fullPath: '/admissions/new'
       preLoaderRoute: typeof AuthenticatedAdmissionsNewRouteImport
       parentRoute: typeof AuthenticatedAdmissionsRoute
+    }
+    '/_authenticated/payroll/payslip/$payslipId': {
+      id: '/_authenticated/payroll/payslip/$payslipId'
+      path: '/payslip/$payslipId'
+      fullPath: '/payroll/payslip/$payslipId'
+      preLoaderRoute: typeof AuthenticatedPayrollPayslipPayslipIdRouteImport
+      parentRoute: typeof AuthenticatedPayrollRoute
     }
     '/_authenticated/finance/receipt/$paymentId': {
       id: '/_authenticated/finance/receipt/$paymentId'
@@ -525,6 +622,32 @@ const AuthenticatedFinanceRouteChildren: AuthenticatedFinanceRouteChildren = {
 const AuthenticatedFinanceRouteWithChildren =
   AuthenticatedFinanceRoute._addFileChildren(AuthenticatedFinanceRouteChildren)
 
+interface AuthenticatedHrRouteChildren {
+  AuthenticatedHrStaffIdRoute: typeof AuthenticatedHrStaffIdRoute
+}
+
+const AuthenticatedHrRouteChildren: AuthenticatedHrRouteChildren = {
+  AuthenticatedHrStaffIdRoute: AuthenticatedHrStaffIdRoute,
+}
+
+const AuthenticatedHrRouteWithChildren = AuthenticatedHrRoute._addFileChildren(
+  AuthenticatedHrRouteChildren,
+)
+
+interface AuthenticatedPayrollRouteChildren {
+  AuthenticatedPayrollRunIdRoute: typeof AuthenticatedPayrollRunIdRoute
+  AuthenticatedPayrollPayslipPayslipIdRoute: typeof AuthenticatedPayrollPayslipPayslipIdRoute
+}
+
+const AuthenticatedPayrollRouteChildren: AuthenticatedPayrollRouteChildren = {
+  AuthenticatedPayrollRunIdRoute: AuthenticatedPayrollRunIdRoute,
+  AuthenticatedPayrollPayslipPayslipIdRoute:
+    AuthenticatedPayrollPayslipPayslipIdRoute,
+}
+
+const AuthenticatedPayrollRouteWithChildren =
+  AuthenticatedPayrollRoute._addFileChildren(AuthenticatedPayrollRouteChildren)
+
 interface AuthenticatedReportsRouteChildren {
   AuthenticatedReportsCoefficientsRoute: typeof AuthenticatedReportsCoefficientsRoute
   AuthenticatedReportsBulletinStudentIdSequenceRoute: typeof AuthenticatedReportsBulletinStudentIdSequenceRoute
@@ -559,7 +682,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBoardingRoute: typeof AuthenticatedBoardingRoute
   AuthenticatedClassesRoute: typeof AuthenticatedClassesRoute
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRouteWithChildren
+  AuthenticatedHrRoute: typeof AuthenticatedHrRouteWithChildren
   AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
+  AuthenticatedPayrollRoute: typeof AuthenticatedPayrollRouteWithChildren
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRouteWithChildren
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
   AuthenticatedTimetableRoute: typeof AuthenticatedTimetableRoute
@@ -578,7 +703,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBoardingRoute: AuthenticatedBoardingRoute,
   AuthenticatedClassesRoute: AuthenticatedClassesRoute,
   AuthenticatedFinanceRoute: AuthenticatedFinanceRouteWithChildren,
+  AuthenticatedHrRoute: AuthenticatedHrRouteWithChildren,
   AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
+  AuthenticatedPayrollRoute: AuthenticatedPayrollRouteWithChildren,
   AuthenticatedReportsRoute: AuthenticatedReportsRouteWithChildren,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
   AuthenticatedTimetableRoute: AuthenticatedTimetableRoute,
