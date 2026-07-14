@@ -895,6 +895,141 @@ export type Database = {
           },
         ]
       }
+      payroll_runs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          finalized_at: string | null
+          id: string
+          notes: string | null
+          period: string
+          school_id: string
+          status: Database["public"]["Enums"]["payroll_status"]
+          total_deductions_fcfa: number
+          total_gross_fcfa: number
+          total_net_fcfa: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          finalized_at?: string | null
+          id?: string
+          notes?: string | null
+          period: string
+          school_id: string
+          status?: Database["public"]["Enums"]["payroll_status"]
+          total_deductions_fcfa?: number
+          total_gross_fcfa?: number
+          total_net_fcfa?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          finalized_at?: string | null
+          id?: string
+          notes?: string | null
+          period?: string
+          school_id?: string
+          status?: Database["public"]["Enums"]["payroll_status"]
+          total_deductions_fcfa?: number
+          total_gross_fcfa?: number
+          total_net_fcfa?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_runs_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payslips: {
+        Row: {
+          allowances: Json
+          base_salary_fcfa: number
+          created_at: string
+          deductions: Json
+          deductions_total_fcfa: number
+          gross_fcfa: number
+          id: string
+          net_fcfa: number
+          notes: string | null
+          paid_at: string | null
+          payment_method: Database["public"]["Enums"]["pay_method"] | null
+          reference: string | null
+          run_id: string
+          school_id: string
+          staff_id: string
+          status: Database["public"]["Enums"]["payslip_status"]
+          updated_at: string
+        }
+        Insert: {
+          allowances?: Json
+          base_salary_fcfa?: number
+          created_at?: string
+          deductions?: Json
+          deductions_total_fcfa?: number
+          gross_fcfa?: number
+          id?: string
+          net_fcfa?: number
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: Database["public"]["Enums"]["pay_method"] | null
+          reference?: string | null
+          run_id: string
+          school_id: string
+          staff_id: string
+          status?: Database["public"]["Enums"]["payslip_status"]
+          updated_at?: string
+        }
+        Update: {
+          allowances?: Json
+          base_salary_fcfa?: number
+          created_at?: string
+          deductions?: Json
+          deductions_total_fcfa?: number
+          gross_fcfa?: number
+          id?: string
+          net_fcfa?: number
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: Database["public"]["Enums"]["pay_method"] | null
+          reference?: string | null
+          run_id?: string
+          school_id?: string
+          staff_id?: string
+          status?: Database["public"]["Enums"]["payslip_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payslips_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payslips_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payslips_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -986,6 +1121,149 @@ export type Database = {
           wallet_default_weekly_limit?: number | null
         }
         Relationships: []
+      }
+      staff: {
+        Row: {
+          address: string | null
+          bank_account: string | null
+          bank_name: string | null
+          base_salary_fcfa: number
+          contract_type: Database["public"]["Enums"]["contract_type"]
+          created_at: string
+          date_of_birth: string | null
+          department: string | null
+          email: string | null
+          end_date: string | null
+          first_name: string
+          gender: string | null
+          hire_date: string | null
+          id: string
+          last_name: string
+          matricule: string | null
+          momo_number: string | null
+          national_id: string | null
+          notes: string | null
+          phone: string | null
+          position: Database["public"]["Enums"]["staff_position"]
+          school_id: string
+          status: Database["public"]["Enums"]["staff_status"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          bank_account?: string | null
+          bank_name?: string | null
+          base_salary_fcfa?: number
+          contract_type?: Database["public"]["Enums"]["contract_type"]
+          created_at?: string
+          date_of_birth?: string | null
+          department?: string | null
+          email?: string | null
+          end_date?: string | null
+          first_name: string
+          gender?: string | null
+          hire_date?: string | null
+          id?: string
+          last_name: string
+          matricule?: string | null
+          momo_number?: string | null
+          national_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          position?: Database["public"]["Enums"]["staff_position"]
+          school_id: string
+          status?: Database["public"]["Enums"]["staff_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          bank_account?: string | null
+          bank_name?: string | null
+          base_salary_fcfa?: number
+          contract_type?: Database["public"]["Enums"]["contract_type"]
+          created_at?: string
+          date_of_birth?: string | null
+          department?: string | null
+          email?: string | null
+          end_date?: string | null
+          first_name?: string
+          gender?: string | null
+          hire_date?: string | null
+          id?: string
+          last_name?: string
+          matricule?: string | null
+          momo_number?: string | null
+          national_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          position?: Database["public"]["Enums"]["staff_position"]
+          school_id?: string
+          status?: Database["public"]["Enums"]["staff_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_allowances: {
+        Row: {
+          active: boolean
+          amount_fcfa: number
+          created_at: string
+          id: string
+          kind: string
+          label: string
+          school_id: string
+          staff_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          amount_fcfa?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          label: string
+          school_id: string
+          staff_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          amount_fcfa?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string
+          school_id?: string
+          staff_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_allowances_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_allowances_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       staff_invitations: {
         Row: {
@@ -1393,6 +1671,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_hr: {
+        Args: { _school_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_manage_school_data: {
         Args: { _school_id: string; _user_id: string }
         Returns: boolean
@@ -1429,6 +1711,7 @@ export type Database = {
         }
         Returns: string
       }
+      recompute_payroll_run: { Args: { _run_id: string }; Returns: undefined }
       recompute_student_balance: {
         Args: { _student_id: string }
         Returns: undefined
@@ -1457,9 +1740,34 @@ export type Database = {
         | "parent"
         | "student"
       attendance_status: "present" | "absent" | "late" | "excused"
+      contract_type:
+        | "permanent"
+        | "fixed_term"
+        | "part_time"
+        | "volunteer"
+        | "intern"
       gender: "male" | "female"
       message_audience: "all" | "class" | "staff" | "guardians"
+      pay_method: "cash" | "bank" | "momo" | "check"
       payment_method: "cash" | "momo" | "bank" | "cheque" | "other"
+      payroll_status: "draft" | "finalized" | "paid"
+      payslip_status: "pending" | "paid"
+      staff_position:
+        | "teacher"
+        | "principal"
+        | "vice_principal"
+        | "bursar"
+        | "secretary"
+        | "discipline_master"
+        | "librarian"
+        | "nurse"
+        | "driver"
+        | "cook"
+        | "cleaner"
+        | "security"
+        | "maintenance"
+        | "other"
+      staff_status: "active" | "on_leave" | "suspended" | "terminated"
       student_status:
         | "active"
         | "inactive"
@@ -1613,9 +1921,36 @@ export const Constants = {
         "student",
       ],
       attendance_status: ["present", "absent", "late", "excused"],
+      contract_type: [
+        "permanent",
+        "fixed_term",
+        "part_time",
+        "volunteer",
+        "intern",
+      ],
       gender: ["male", "female"],
       message_audience: ["all", "class", "staff", "guardians"],
+      pay_method: ["cash", "bank", "momo", "check"],
       payment_method: ["cash", "momo", "bank", "cheque", "other"],
+      payroll_status: ["draft", "finalized", "paid"],
+      payslip_status: ["pending", "paid"],
+      staff_position: [
+        "teacher",
+        "principal",
+        "vice_principal",
+        "bursar",
+        "secretary",
+        "discipline_master",
+        "librarian",
+        "nurse",
+        "driver",
+        "cook",
+        "cleaner",
+        "security",
+        "maintenance",
+        "other",
+      ],
+      staff_status: ["active", "on_leave", "suspended", "terminated"],
       student_status: [
         "active",
         "inactive",
