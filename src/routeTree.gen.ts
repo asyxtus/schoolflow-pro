@@ -31,6 +31,7 @@ import { Route as AuthenticatedStudentsStudentIdRouteImport } from './routes/_au
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated.settings.users'
 import { Route as AuthenticatedSettingsAuditRouteImport } from './routes/_authenticated.settings.audit'
 import { Route as AuthenticatedReportsCoefficientsRouteImport } from './routes/_authenticated.reports.coefficients'
+import { Route as AuthenticatedHrStaffIdRouteImport } from './routes/_authenticated.hr.$staffId'
 import { Route as AuthenticatedAdmissionsNewRouteImport } from './routes/_authenticated.admissions.new'
 import { Route as AuthenticatedFinanceReceiptPaymentIdRouteImport } from './routes/_authenticated.finance.receipt.$paymentId'
 import { Route as AuthenticatedReportsBulletinStudentIdSequenceRouteImport } from './routes/_authenticated.reports.bulletin.$studentId.$sequence'
@@ -151,6 +152,11 @@ const AuthenticatedReportsCoefficientsRoute =
     path: '/coefficients',
     getParentRoute: () => AuthenticatedReportsRoute,
   } as any)
+const AuthenticatedHrStaffIdRoute = AuthenticatedHrStaffIdRouteImport.update({
+  id: '/$staffId',
+  path: '/$staffId',
+  getParentRoute: () => AuthenticatedHrRoute,
+} as any)
 const AuthenticatedAdmissionsNewRoute =
   AuthenticatedAdmissionsNewRouteImport.update({
     id: '/new',
@@ -180,13 +186,14 @@ export interface FileRoutesByFullPath {
   '/boarding': typeof AuthenticatedBoardingRoute
   '/classes': typeof AuthenticatedClassesRoute
   '/finance': typeof AuthenticatedFinanceRouteWithChildren
-  '/hr': typeof AuthenticatedHrRoute
+  '/hr': typeof AuthenticatedHrRouteWithChildren
   '/messages': typeof AuthenticatedMessagesRoute
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/timetable': typeof AuthenticatedTimetableRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/hr/$staffId': typeof AuthenticatedHrStaffIdRoute
   '/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
   '/settings/audit': typeof AuthenticatedSettingsAuditRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
@@ -205,7 +212,7 @@ export interface FileRoutesByTo {
   '/boarding': typeof AuthenticatedBoardingRoute
   '/classes': typeof AuthenticatedClassesRoute
   '/finance': typeof AuthenticatedFinanceRouteWithChildren
-  '/hr': typeof AuthenticatedHrRoute
+  '/hr': typeof AuthenticatedHrRouteWithChildren
   '/messages': typeof AuthenticatedMessagesRoute
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/students': typeof AuthenticatedStudentsRouteWithChildren
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/wallet': typeof AuthenticatedWalletRoute
   '/': typeof AuthenticatedIndexRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/hr/$staffId': typeof AuthenticatedHrStaffIdRoute
   '/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
   '/settings/audit': typeof AuthenticatedSettingsAuditRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
@@ -233,7 +241,7 @@ export interface FileRoutesById {
   '/_authenticated/boarding': typeof AuthenticatedBoardingRoute
   '/_authenticated/classes': typeof AuthenticatedClassesRoute
   '/_authenticated/finance': typeof AuthenticatedFinanceRouteWithChildren
-  '/_authenticated/hr': typeof AuthenticatedHrRoute
+  '/_authenticated/hr': typeof AuthenticatedHrRouteWithChildren
   '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRouteWithChildren
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
@@ -241,6 +249,7 @@ export interface FileRoutesById {
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/_authenticated/hr/$staffId': typeof AuthenticatedHrStaffIdRoute
   '/_authenticated/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
   '/_authenticated/settings/audit': typeof AuthenticatedSettingsAuditRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
@@ -269,6 +278,7 @@ export interface FileRouteTypes {
     | '/timetable'
     | '/wallet'
     | '/admissions/new'
+    | '/hr/$staffId'
     | '/reports/coefficients'
     | '/settings/audit'
     | '/settings/users'
@@ -295,6 +305,7 @@ export interface FileRouteTypes {
     | '/wallet'
     | '/'
     | '/admissions/new'
+    | '/hr/$staffId'
     | '/reports/coefficients'
     | '/settings/audit'
     | '/settings/users'
@@ -322,6 +333,7 @@ export interface FileRouteTypes {
     | '/_authenticated/wallet'
     | '/_authenticated/'
     | '/_authenticated/admissions/new'
+    | '/_authenticated/hr/$staffId'
     | '/_authenticated/reports/coefficients'
     | '/_authenticated/settings/audit'
     | '/_authenticated/settings/users'
@@ -494,6 +506,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsCoefficientsRouteImport
       parentRoute: typeof AuthenticatedReportsRoute
     }
+    '/_authenticated/hr/$staffId': {
+      id: '/_authenticated/hr/$staffId'
+      path: '/$staffId'
+      fullPath: '/hr/$staffId'
+      preLoaderRoute: typeof AuthenticatedHrStaffIdRouteImport
+      parentRoute: typeof AuthenticatedHrRoute
+    }
     '/_authenticated/admissions/new': {
       id: '/_authenticated/admissions/new'
       path: '/new'
@@ -544,6 +563,18 @@ const AuthenticatedFinanceRouteChildren: AuthenticatedFinanceRouteChildren = {
 const AuthenticatedFinanceRouteWithChildren =
   AuthenticatedFinanceRoute._addFileChildren(AuthenticatedFinanceRouteChildren)
 
+interface AuthenticatedHrRouteChildren {
+  AuthenticatedHrStaffIdRoute: typeof AuthenticatedHrStaffIdRoute
+}
+
+const AuthenticatedHrRouteChildren: AuthenticatedHrRouteChildren = {
+  AuthenticatedHrStaffIdRoute: AuthenticatedHrStaffIdRoute,
+}
+
+const AuthenticatedHrRouteWithChildren = AuthenticatedHrRoute._addFileChildren(
+  AuthenticatedHrRouteChildren,
+)
+
 interface AuthenticatedReportsRouteChildren {
   AuthenticatedReportsCoefficientsRoute: typeof AuthenticatedReportsCoefficientsRoute
   AuthenticatedReportsBulletinStudentIdSequenceRoute: typeof AuthenticatedReportsBulletinStudentIdSequenceRoute
@@ -578,7 +609,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBoardingRoute: typeof AuthenticatedBoardingRoute
   AuthenticatedClassesRoute: typeof AuthenticatedClassesRoute
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRouteWithChildren
-  AuthenticatedHrRoute: typeof AuthenticatedHrRoute
+  AuthenticatedHrRoute: typeof AuthenticatedHrRouteWithChildren
   AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRouteWithChildren
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
@@ -598,7 +629,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBoardingRoute: AuthenticatedBoardingRoute,
   AuthenticatedClassesRoute: AuthenticatedClassesRoute,
   AuthenticatedFinanceRoute: AuthenticatedFinanceRouteWithChildren,
-  AuthenticatedHrRoute: AuthenticatedHrRoute,
+  AuthenticatedHrRoute: AuthenticatedHrRouteWithChildren,
   AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRouteWithChildren,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
