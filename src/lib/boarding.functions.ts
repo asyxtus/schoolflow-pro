@@ -107,7 +107,6 @@ export const listBoardingAssignments = createServerFn({ method: "GET" })
     if (!schoolId) return [];
     let q = supabase
       .from("boarding_assignments")
-      .select("id, student_id, dormitory_id, room_id, bed_number, assigned_on, active, students(full_name, matricule, class_name, gender), dormitories(name), dorm_rooms(room_number)")
       .select("id, student_id, dormitory_id, room_id, bed_number, assigned_on, active, students(first_name, last_name, matricule, class_name, gender), dormitories(name), dorm_rooms(room_number)")
       .eq("school_id", schoolId)
       .eq("active", true)
@@ -116,7 +115,7 @@ export const listBoardingAssignments = createServerFn({ method: "GET" })
     if (data.dormitoryId) q = q.eq("dormitory_id", data.dormitoryId);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    let out = rows ?? [];
+    let out = (rows ?? []).map((r: any) => ({ ...r, students: r.students ? { ...r.students, full_name: `${r.students.first_name ?? ""} ${r.students.last_name ?? ""}`.trim() } : r.students }));
     if (data.q) {
       const t = data.q.toLowerCase();
       out = out.filter((r: any) => r.students?.full_name?.toLowerCase().includes(t) || r.students?.matricule?.toLowerCase().includes(t));
@@ -160,7 +159,7 @@ export const getRollCall = createServerFn({ method: "GET" })
     if (!schoolId) return { roster: [], marks: {} };
     const { data: assigns } = await supabase
       .from("boarding_assignments")
-      .select("student_id, bed_number, dorm_rooms(room_number), students(full_name, matricule, class_name)")
+      .select("student_id, bed_number, dorm_rooms(room_number), students(first_name, last_name, matricule, class_name)")
       .eq("school_id", schoolId).eq("dormitory_id", data.dormitory_id).eq("active", true);
     const { data: marks } = await supabase
       .from("boarding_roll_call")
@@ -169,7 +168,8 @@ export const getRollCall = createServerFn({ method: "GET" })
       .eq("roll_date", data.date).eq("session", data.session);
     const map: Record<string, { status: RollStatus; note: string | null }> = {};
     for (const m of marks ?? []) map[m.student_id] = { status: m.status as RollStatus, note: m.note };
-    return { roster: assigns ?? [], marks: map };
+    const roster = (assigns ?? []).map((r: any) => ({ ...r, students: r.students ? { ...r.students, full_name: `${r.students.first_name ?? ""} ${r.students.last_name ?? ""}`.trim() } : r.students }));
+    return { roster, marks: map };
   });
 
 export const saveRollCall = createServerFn({ method: "POST" })
@@ -198,12 +198,12 @@ export const listExeats = createServerFn({ method: "GET" })
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) return [];
     let q = supabase.from("boarding_exeats")
-      .select("*, students(full_name, matricule, class_name)")
+      .select("*, students(first_name, last_name, matricule, class_name)")
       .eq("school_id", schoolId).order("depart_at", { ascending: false }).limit(500);
     if (data.status && data.status !== "all") q = q.eq("status", data.status);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    let out = rows ?? [];
+    let out = (rows ?? []).map((r: any) => ({ ...r, students: r.students ? { ...r.students, full_name: `${r.students.first_name ?? ""} ${r.students.last_name ?? ""}`.trim() } : r.students }));
     if (data.q) {
       const t = data.q.toLowerCase();
       out = out.filter((r: any) => r.students?.full_name?.toLowerCase().includes(t) || r.students?.matricule?.toLowerCase().includes(t));
@@ -269,12 +269,12 @@ export const listVisitors = createServerFn({ method: "GET" })
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) return [];
     let q = supabase.from("boarding_visitors")
-      .select("*, students(full_name, matricule, class_name)")
+      .select("*, students(first_name, last_name, matricule, class_name)")
       .eq("school_id", schoolId).order("check_in_at", { ascending: false }).limit(500);
     if (data.activeOnly) q = q.is("check_out_at", null);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    let out = rows ?? [];
+    let out = (rows ?? []).map((r: any) => ({ ...r, students: r.students ? { ...r.students, full_name: `${r.students.first_name ?? ""} ${r.students.last_name ?? ""}`.trim() } : r.students }));
     if (data.q) {
       const t = data.q.toLowerCase();
       out = out.filter((r: any) => r.visitor_name?.toLowerCase().includes(t) || r.students?.full_name?.toLowerCase().includes(t));
@@ -340,9 +340,9 @@ export const searchBoardingStudents = createServerFn({ method: "GET" })
     if (!schoolId || !data.q) return [];
     const t = `%${data.q}%`;
     const { data: rows } = await supabase.from("students")
-      .select("id, full_name, matricule, class_name, gender")
+      .select("id, first_name, last_name, matricule, class_name, gender")
       .eq("school_id", schoolId).eq("status", "active")
-      .or(`full_name.ilike.${t},matricule.ilike.${t}`)
+      .or(`first_name.ilike.${t},last_name.ilike.${t},matricule.ilike.${t}`)
       .limit(20);
-    return rows ?? [];
+    return (rows ?? []).map((r: any) => ({ ...r, full_name: `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim() }));
   });
