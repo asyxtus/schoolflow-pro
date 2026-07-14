@@ -221,7 +221,7 @@ export const setRunStatus = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) throw new Error("No school assigned");
-    const patch: Record<string, unknown> = { status: data.status };
+    const patch: { status: PayrollStatus; finalized_at?: string } = { status: data.status };
     if (data.status === "finalized") patch.finalized_at = new Date().toISOString();
     const { error } = await supabase.from("payroll_runs").update(patch).eq("id", data.id).eq("school_id", schoolId);
     if (error) throw new Error(error.message);
