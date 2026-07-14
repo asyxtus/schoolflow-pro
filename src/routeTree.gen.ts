@@ -35,6 +35,7 @@ import { Route as AuthenticatedReportsCoefficientsRouteImport } from './routes/_
 import { Route as AuthenticatedPayrollRunIdRouteImport } from './routes/_authenticated.payroll.$runId'
 import { Route as AuthenticatedHrStaffIdRouteImport } from './routes/_authenticated.hr.$staffId'
 import { Route as AuthenticatedAdmissionsNewRouteImport } from './routes/_authenticated.admissions.new'
+import { Route as AuthenticatedPayrollPayslipPayslipIdRouteImport } from './routes/_authenticated.payroll.payslip.$payslipId'
 import { Route as AuthenticatedFinanceReceiptPaymentIdRouteImport } from './routes/_authenticated.finance.receipt.$paymentId'
 import { Route as AuthenticatedReportsBulletinStudentIdSequenceRouteImport } from './routes/_authenticated.reports.bulletin.$studentId.$sequence'
 
@@ -176,6 +177,12 @@ const AuthenticatedAdmissionsNewRoute =
     path: '/new',
     getParentRoute: () => AuthenticatedAdmissionsRoute,
   } as any)
+const AuthenticatedPayrollPayslipPayslipIdRoute =
+  AuthenticatedPayrollPayslipPayslipIdRouteImport.update({
+    id: '/payslip/$payslipId',
+    path: '/payslip/$payslipId',
+    getParentRoute: () => AuthenticatedPayrollRoute,
+  } as any)
 const AuthenticatedFinanceReceiptPaymentIdRoute =
   AuthenticatedFinanceReceiptPaymentIdRouteImport.update({
     id: '/receipt/$paymentId',
@@ -216,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/students/new': typeof AuthenticatedStudentsNewRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/finance/receipt/$paymentId': typeof AuthenticatedFinanceReceiptPaymentIdRoute
+  '/payroll/payslip/$payslipId': typeof AuthenticatedPayrollPayslipPayslipIdRoute
   '/reports/bulletin/$studentId/$sequence': typeof AuthenticatedReportsBulletinStudentIdSequenceRoute
 }
 export interface FileRoutesByTo {
@@ -245,6 +253,7 @@ export interface FileRoutesByTo {
   '/students/new': typeof AuthenticatedStudentsNewRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/finance/receipt/$paymentId': typeof AuthenticatedFinanceReceiptPaymentIdRoute
+  '/payroll/payslip/$payslipId': typeof AuthenticatedPayrollPayslipPayslipIdRoute
   '/reports/bulletin/$studentId/$sequence': typeof AuthenticatedReportsBulletinStudentIdSequenceRoute
 }
 export interface FileRoutesById {
@@ -276,6 +285,7 @@ export interface FileRoutesById {
   '/_authenticated/students_/new': typeof AuthenticatedStudentsNewRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/finance/receipt/$paymentId': typeof AuthenticatedFinanceReceiptPaymentIdRoute
+  '/_authenticated/payroll/payslip/$payslipId': typeof AuthenticatedPayrollPayslipPayslipIdRoute
   '/_authenticated/reports/bulletin/$studentId/$sequence': typeof AuthenticatedReportsBulletinStudentIdSequenceRoute
 }
 export interface FileRouteTypes {
@@ -307,6 +317,7 @@ export interface FileRouteTypes {
     | '/students/new'
     | '/settings/'
     | '/finance/receipt/$paymentId'
+    | '/payroll/payslip/$payslipId'
     | '/reports/bulletin/$studentId/$sequence'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -336,6 +347,7 @@ export interface FileRouteTypes {
     | '/students/new'
     | '/settings'
     | '/finance/receipt/$paymentId'
+    | '/payroll/payslip/$payslipId'
     | '/reports/bulletin/$studentId/$sequence'
   id:
     | '__root__'
@@ -366,6 +378,7 @@ export interface FileRouteTypes {
     | '/_authenticated/students_/new'
     | '/_authenticated/settings/'
     | '/_authenticated/finance/receipt/$paymentId'
+    | '/_authenticated/payroll/payslip/$payslipId'
     | '/_authenticated/reports/bulletin/$studentId/$sequence'
   fileRoutesById: FileRoutesById
 }
@@ -559,6 +572,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdmissionsNewRouteImport
       parentRoute: typeof AuthenticatedAdmissionsRoute
     }
+    '/_authenticated/payroll/payslip/$payslipId': {
+      id: '/_authenticated/payroll/payslip/$payslipId'
+      path: '/payslip/$payslipId'
+      fullPath: '/payroll/payslip/$payslipId'
+      preLoaderRoute: typeof AuthenticatedPayrollPayslipPayslipIdRouteImport
+      parentRoute: typeof AuthenticatedPayrollRoute
+    }
     '/_authenticated/finance/receipt/$paymentId': {
       id: '/_authenticated/finance/receipt/$paymentId'
       path: '/receipt/$paymentId'
@@ -616,10 +636,13 @@ const AuthenticatedHrRouteWithChildren = AuthenticatedHrRoute._addFileChildren(
 
 interface AuthenticatedPayrollRouteChildren {
   AuthenticatedPayrollRunIdRoute: typeof AuthenticatedPayrollRunIdRoute
+  AuthenticatedPayrollPayslipPayslipIdRoute: typeof AuthenticatedPayrollPayslipPayslipIdRoute
 }
 
 const AuthenticatedPayrollRouteChildren: AuthenticatedPayrollRouteChildren = {
   AuthenticatedPayrollRunIdRoute: AuthenticatedPayrollRunIdRoute,
+  AuthenticatedPayrollPayslipPayslipIdRoute:
+    AuthenticatedPayrollPayslipPayslipIdRoute,
 }
 
 const AuthenticatedPayrollRouteWithChildren =
