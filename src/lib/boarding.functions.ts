@@ -108,6 +108,7 @@ export const listBoardingAssignments = createServerFn({ method: "GET" })
     let q = supabase
       .from("boarding_assignments")
       .select("id, student_id, dormitory_id, room_id, bed_number, assigned_on, active, students(full_name, matricule, class_name, gender), dormitories(name), dorm_rooms(room_number)")
+      .select("id, student_id, dormitory_id, room_id, bed_number, assigned_on, active, students(first_name, last_name, matricule, class_name, gender), dormitories(name), dorm_rooms(room_number)")
       .eq("school_id", schoolId)
       .eq("active", true)
       .order("assigned_on", { ascending: false })
