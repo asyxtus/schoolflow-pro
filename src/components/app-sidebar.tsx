@@ -18,6 +18,8 @@ import {
   History,
   ScrollText,
   BedDouble,
+  Briefcase,
+  Banknote,
 } from "lucide-react";
 
 import {
@@ -66,6 +68,8 @@ const groups = [
       { title: "Finance", url: "/finance", icon: Wallet },
       { title: "Student Wallet", url: "/wallet", icon: PiggyBank },
       { title: "Boarding", url: "/boarding", icon: BedDouble },
+      { title: "HR / Staff", url: "/hr", icon: Briefcase },
+      { title: "Payroll", url: "/payroll", icon: Banknote },
     ],
   },
   {
