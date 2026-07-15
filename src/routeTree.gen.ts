@@ -31,6 +31,7 @@ import { Route as AuthenticatedStudentsNewRouteImport } from './routes/_authenti
 import { Route as AuthenticatedStudentsStudentIdRouteImport } from './routes/_authenticated.students.$studentId'
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated.settings.users'
 import { Route as AuthenticatedSettingsAuditRouteImport } from './routes/_authenticated.settings.audit'
+import { Route as AuthenticatedReportsFinanceRouteImport } from './routes/_authenticated.reports.finance'
 import { Route as AuthenticatedReportsCoefficientsRouteImport } from './routes/_authenticated.reports.coefficients'
 import { Route as AuthenticatedPayrollRunIdRouteImport } from './routes/_authenticated.payroll.$runId'
 import { Route as AuthenticatedHrStaffIdRouteImport } from './routes/_authenticated.hr.$staffId'
@@ -154,6 +155,12 @@ const AuthenticatedSettingsAuditRoute =
     path: '/settings/audit',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedReportsFinanceRoute =
+  AuthenticatedReportsFinanceRouteImport.update({
+    id: '/finance',
+    path: '/finance',
+    getParentRoute: () => AuthenticatedReportsRoute,
+  } as any)
 const AuthenticatedReportsCoefficientsRoute =
   AuthenticatedReportsCoefficientsRouteImport.update({
     id: '/coefficients',
@@ -217,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/hr/$staffId': typeof AuthenticatedHrStaffIdRoute
   '/payroll/$runId': typeof AuthenticatedPayrollRunIdRoute
   '/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
+  '/reports/finance': typeof AuthenticatedReportsFinanceRoute
   '/settings/audit': typeof AuthenticatedSettingsAuditRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
@@ -247,6 +255,7 @@ export interface FileRoutesByTo {
   '/hr/$staffId': typeof AuthenticatedHrStaffIdRoute
   '/payroll/$runId': typeof AuthenticatedPayrollRunIdRoute
   '/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
+  '/reports/finance': typeof AuthenticatedReportsFinanceRoute
   '/settings/audit': typeof AuthenticatedSettingsAuditRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
@@ -279,6 +288,7 @@ export interface FileRoutesById {
   '/_authenticated/hr/$staffId': typeof AuthenticatedHrStaffIdRoute
   '/_authenticated/payroll/$runId': typeof AuthenticatedPayrollRunIdRoute
   '/_authenticated/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
+  '/_authenticated/reports/finance': typeof AuthenticatedReportsFinanceRoute
   '/_authenticated/settings/audit': typeof AuthenticatedSettingsAuditRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/_authenticated/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
@@ -311,6 +321,7 @@ export interface FileRouteTypes {
     | '/hr/$staffId'
     | '/payroll/$runId'
     | '/reports/coefficients'
+    | '/reports/finance'
     | '/settings/audit'
     | '/settings/users'
     | '/students/$studentId'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '/hr/$staffId'
     | '/payroll/$runId'
     | '/reports/coefficients'
+    | '/reports/finance'
     | '/settings/audit'
     | '/settings/users'
     | '/students/$studentId'
@@ -372,6 +384,7 @@ export interface FileRouteTypes {
     | '/_authenticated/hr/$staffId'
     | '/_authenticated/payroll/$runId'
     | '/_authenticated/reports/coefficients'
+    | '/_authenticated/reports/finance'
     | '/_authenticated/settings/audit'
     | '/_authenticated/settings/users'
     | '/_authenticated/students/$studentId'
@@ -544,6 +557,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsAuditRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports/finance': {
+      id: '/_authenticated/reports/finance'
+      path: '/finance'
+      fullPath: '/reports/finance'
+      preLoaderRoute: typeof AuthenticatedReportsFinanceRouteImport
+      parentRoute: typeof AuthenticatedReportsRoute
+    }
     '/_authenticated/reports/coefficients': {
       id: '/_authenticated/reports/coefficients'
       path: '/coefficients'
@@ -650,11 +670,13 @@ const AuthenticatedPayrollRouteWithChildren =
 
 interface AuthenticatedReportsRouteChildren {
   AuthenticatedReportsCoefficientsRoute: typeof AuthenticatedReportsCoefficientsRoute
+  AuthenticatedReportsFinanceRoute: typeof AuthenticatedReportsFinanceRoute
   AuthenticatedReportsBulletinStudentIdSequenceRoute: typeof AuthenticatedReportsBulletinStudentIdSequenceRoute
 }
 
 const AuthenticatedReportsRouteChildren: AuthenticatedReportsRouteChildren = {
   AuthenticatedReportsCoefficientsRoute: AuthenticatedReportsCoefficientsRoute,
+  AuthenticatedReportsFinanceRoute: AuthenticatedReportsFinanceRoute,
   AuthenticatedReportsBulletinStudentIdSequenceRoute:
     AuthenticatedReportsBulletinStudentIdSequenceRoute,
 }
