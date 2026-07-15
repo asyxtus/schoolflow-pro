@@ -797,6 +797,274 @@ export type Database = {
           },
         ]
       }
+      library_books: {
+        Row: {
+          author: string | null
+          available_copies: number
+          category: string | null
+          cover_url: string | null
+          created_at: string
+          id: string
+          isbn: string | null
+          location: string | null
+          publisher: string | null
+          school_id: string
+          title: string
+          total_copies: number
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          author?: string | null
+          available_copies?: number
+          category?: string | null
+          cover_url?: string | null
+          created_at?: string
+          id?: string
+          isbn?: string | null
+          location?: string | null
+          publisher?: string | null
+          school_id: string
+          title: string
+          total_copies?: number
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          author?: string | null
+          available_copies?: number
+          category?: string | null
+          cover_url?: string | null
+          created_at?: string
+          id?: string
+          isbn?: string | null
+          location?: string | null
+          publisher?: string | null
+          school_id?: string
+          title?: string
+          total_copies?: number
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_books_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_copies: {
+        Row: {
+          barcode: string | null
+          book_id: string
+          created_at: string
+          id: string
+          note: string | null
+          school_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          barcode?: string | null
+          book_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          school_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          barcode?: string | null
+          book_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          school_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_copies_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "library_books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_copies_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_loans: {
+        Row: {
+          book_id: string
+          borrower_type: string
+          copy_id: string
+          created_at: string
+          due_date: string
+          id: string
+          loaned_at: string
+          note: string | null
+          recorded_by: string | null
+          returned_at: string | null
+          school_id: string
+          staff_id: string | null
+          status: string
+          student_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          book_id: string
+          borrower_type?: string
+          copy_id: string
+          created_at?: string
+          due_date: string
+          id?: string
+          loaned_at?: string
+          note?: string | null
+          recorded_by?: string | null
+          returned_at?: string | null
+          school_id: string
+          staff_id?: string | null
+          status?: string
+          student_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          book_id?: string
+          borrower_type?: string
+          copy_id?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          loaned_at?: string
+          note?: string | null
+          recorded_by?: string | null
+          returned_at?: string | null
+          school_id?: string
+          staff_id?: string | null
+          status?: string
+          student_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_loans_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "library_books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_loans_copy_id_fkey"
+            columns: ["copy_id"]
+            isOneToOne: false
+            referencedRelation: "library_copies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_loans_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_loans_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_loans_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_reservations: {
+        Row: {
+          book_id: string
+          borrower_type: string
+          created_at: string
+          id: string
+          note: string | null
+          reserved_at: string
+          school_id: string
+          staff_id: string | null
+          status: string
+          student_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          book_id: string
+          borrower_type?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          reserved_at?: string
+          school_id: string
+          staff_id?: string | null
+          status?: string
+          student_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          book_id?: string
+          borrower_type?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          reserved_at?: string
+          school_id?: string
+          staff_id?: string | null
+          status?: string
+          student_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_reservations_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "library_books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_reservations_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_reservations_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_reservations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           audience: Database["public"]["Enums"]["message_audience"]
@@ -1565,6 +1833,305 @@ export type Database = {
           },
         ]
       }
+      transport_boarding_log: {
+        Row: {
+          boarded: boolean
+          created_at: string
+          direction: string
+          id: string
+          log_date: string
+          note: string | null
+          recorded_by: string | null
+          route_id: string
+          school_id: string
+          student_id: string
+        }
+        Insert: {
+          boarded?: boolean
+          created_at?: string
+          direction?: string
+          id?: string
+          log_date?: string
+          note?: string | null
+          recorded_by?: string | null
+          route_id: string
+          school_id: string
+          student_id: string
+        }
+        Update: {
+          boarded?: boolean
+          created_at?: string
+          direction?: string
+          id?: string
+          log_date?: string
+          note?: string | null
+          recorded_by?: string | null
+          route_id?: string
+          school_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_boarding_log_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "transport_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_boarding_log_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_boarding_log_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transport_incidents: {
+        Row: {
+          cost_fcfa: number
+          created_at: string
+          description: string
+          id: string
+          incident_date: string
+          kind: string
+          resolved: boolean
+          route_id: string | null
+          school_id: string
+          severity: string | null
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          cost_fcfa?: number
+          created_at?: string
+          description: string
+          id?: string
+          incident_date?: string
+          kind?: string
+          resolved?: boolean
+          route_id?: string | null
+          school_id: string
+          severity?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          cost_fcfa?: number
+          created_at?: string
+          description?: string
+          id?: string
+          incident_date?: string
+          kind?: string
+          resolved?: boolean
+          route_id?: string | null
+          school_id?: string
+          severity?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_incidents_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "transport_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_incidents_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_incidents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "transport_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transport_routes: {
+        Row: {
+          active: boolean
+          code: string | null
+          created_at: string
+          id: string
+          monthly_fee_fcfa: number
+          name: string
+          notes: string | null
+          school_id: string
+          stops: Json
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          code?: string | null
+          created_at?: string
+          id?: string
+          monthly_fee_fcfa?: number
+          name: string
+          notes?: string | null
+          school_id: string
+          stops?: Json
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          code?: string | null
+          created_at?: string
+          id?: string
+          monthly_fee_fcfa?: number
+          name?: string
+          notes?: string | null
+          school_id?: string
+          stops?: Json
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_routes_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_routes_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "transport_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transport_subscriptions: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          monthly_fee_fcfa: number
+          route_id: string
+          school_id: string
+          start_date: string
+          status: string
+          stop_name: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          monthly_fee_fcfa?: number
+          route_id: string
+          school_id: string
+          start_date?: string
+          status?: string
+          stop_name?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          monthly_fee_fcfa?: number
+          route_id?: string
+          school_id?: string
+          start_date?: string
+          status?: string
+          stop_name?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_subscriptions_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "transport_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_subscriptions_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_subscriptions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transport_vehicles: {
+        Row: {
+          capacity: number
+          created_at: string
+          driver_name: string | null
+          driver_phone: string | null
+          id: string
+          model: string | null
+          notes: string | null
+          plate_no: string
+          school_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          driver_name?: string | null
+          driver_phone?: string | null
+          id?: string
+          model?: string | null
+          notes?: string | null
+          plate_no: string
+          school_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          driver_name?: string | null
+          driver_phone?: string | null
+          id?: string
+          model?: string | null
+          notes?: string | null
+          plate_no?: string
+          school_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_vehicles_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1711,6 +2278,7 @@ export type Database = {
         }
         Returns: string
       }
+      recompute_book_counts: { Args: { _book_id: string }; Returns: undefined }
       recompute_payroll_run: { Args: { _run_id: string }; Returns: undefined }
       recompute_student_balance: {
         Args: { _student_id: string }
