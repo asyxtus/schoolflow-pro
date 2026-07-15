@@ -25,7 +25,7 @@ export const financeReport = createServerFn({ method: "GET" })
       supabase.from("student_fees").select("amount_fcfa, discount_fcfa, students(class_name)").eq("school_id", schoolId),
       supabase.from("students").select("class_name, fee_balance").eq("school_id", schoolId).eq("status", "active"),
       supabase.from("students").select("wallet_balance").eq("school_id", schoolId).eq("status", "active"),
-      supabase.from("payroll_runs").select("total_net_fcfa, period_start, status").eq("school_id", schoolId),
+      supabase.from("payroll_runs").select("total_net_fcfa, period, status").eq("school_id", schoolId),
       supabase.from("transport_subscriptions").select("monthly_fee_fcfa").eq("school_id", schoolId).eq("status", "active"),
       supabase.from("transport_incidents").select("cost_fcfa").eq("school_id", schoolId),
     ]);
