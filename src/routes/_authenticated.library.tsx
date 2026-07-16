@@ -254,7 +254,13 @@ function LoansTab() {
               <div><Label>Book</Label>
                 <Select value={form.book_id} onValueChange={loadCopies}>
                   <SelectTrigger><SelectValue placeholder="Select book" /></SelectTrigger>
-                  <SelectContent>{books.filter((b) => b.available_copies > 0).map((b) => <SelectItem key={b.id} value={b.id}>{b.title} · {b.available_copies} avail.</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {books.map((b) => (
+                      <SelectItem key={b.id} value={b.id} disabled={b.available_copies <= 0}>
+                        {b.title} · {b.available_copies > 0 ? `${b.available_copies} avail.` : "no copies — add copies first"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
               {form.book_id && (
