@@ -356,6 +356,7 @@ function ReservationsTab() {
   const router = useRouter();
   const create = useServerFn(createReservation);
   const update = useServerFn(updateReservation);
+  const fulfil = useServerFn(fulfilReservation);
   const search = useServerFn(searchLibraryStudents);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<{ book_id: string; borrower_type: BorrowerType; student_id: string; student_name: string; staff_id: string; note: string }>({ book_id: "", borrower_type: "student", student_id: "", student_name: "", staff_id: "", note: "" });
@@ -440,7 +441,15 @@ function ReservationsTab() {
                     <td className="text-right">
                       {r.status === "pending" && (
                         <>
-                          <Button size="sm" variant="outline" onClick={async () => { await update({ data: { id: r.id, status: "fulfilled" as ReservationStatus } }); router.invalidate(); }}>Fulfill</Button>
+                          <Button size="sm" variant="outline" disabled={!avail} title={avail ? "Check out to reserver" : "No copies available"}
+                            onClick={async () => {
+                              try {
+                                const due = new Date(); due.setDate(due.getDate() + 14);
+                                await fulfil({ data: { id: r.id, due_date: due.toISOString().slice(0, 10) } });
+                                toast.success("Loan created for reserver");
+                                router.invalidate();
+                              } catch (e) { toast.error((e as Error).message); }
+                            }}>Fulfill</Button>
                           <Button size="sm" variant="ghost" className="ml-1" onClick={async () => { await update({ data: { id: r.id, status: "cancelled" as ReservationStatus } }); router.invalidate(); }}>Cancel</Button>
                         </>
                       )}
