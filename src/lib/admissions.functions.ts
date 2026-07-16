@@ -142,5 +142,53 @@ export const admitApplicant = createServerFn({ method: "POST" })
       .eq("school_id", schoolId);
     if (uErr) throw uErr;
 
+    // Auto-create invoices from fee structures for this class
+    const targetClass = data.className || applicant.class_applied_for;
+    if (targetClass && student) {
+      const { data: structures } = await supabase
+        .from("fee_structures")
+        .select("id, label, amount_fcfa, academic_year, installments, due_date, kind")
+        .eq("school_id", schoolId)
+        .eq("class_name", targetClass);
+      const invoices: Array<{
+        school_id: string;
+        student_id: string;
+        fee_structure_id: string;
+        label: string;
+        amount_fcfa: number;
+        academic_year: string | null;
+        due_date: string | null;
+      }> = [];
+      for (const fs of structures ?? []) {
+        const insts = Array.isArray(fs.installments) ? (fs.installments as Array<{ label?: string; amount_fcfa?: number; due_date?: string | null }>) : [];
+        if (insts.length > 0) {
+          for (const it of insts) {
+            invoices.push({
+              school_id: schoolId,
+              student_id: student.id,
+              fee_structure_id: fs.id,
+              label: `${fs.label} — ${it.label ?? "Installment"}`,
+              amount_fcfa: Number(it.amount_fcfa ?? 0),
+              academic_year: fs.academic_year,
+              due_date: it.due_date ?? null,
+            });
+          }
+        } else {
+          invoices.push({
+            school_id: schoolId,
+            student_id: student.id,
+            fee_structure_id: fs.id,
+            label: fs.label,
+            amount_fcfa: fs.amount_fcfa,
+            academic_year: fs.academic_year,
+            due_date: fs.due_date,
+          });
+        }
+      }
+      if (invoices.length > 0) {
+        await supabase.from("student_fees").insert(invoices);
+      }
+    }
+
     return { studentId: student!.id };
   });
