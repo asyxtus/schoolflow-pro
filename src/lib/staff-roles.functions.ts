@@ -27,14 +27,19 @@ export const listSchoolUsers = createServerFn({ method: "GET" })
     if (!schoolId) return [];
     const { data: roles, error } = await context.supabase
       .from("user_roles")
-      .select("user_id, role, profiles(id, email, full_name)")
+      .select("user_id, role")
       .eq("school_id", schoolId);
     if (error) throw new Error(error.message);
+    const userIds = Array.from(new Set((roles ?? []).map((r) => r.user_id)));
+    const { data: profiles } = userIds.length
+      ? await context.supabase.from("profiles").select("id, email, full_name").in("id", userIds)
+      : { data: [] as { id: string; email: string; full_name: string }[] };
+    const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
     const map = new Map<string, { user_id: string; email: string; full_name: string; roles: AppRole[] }>();
     for (const r of roles ?? []) {
-      const p = (r as { profiles?: { id: string; email: string; full_name: string } }).profiles;
+      const p = profileMap.get(r.user_id);
       if (!p) continue;
-      const entry = map.get(p.id) ?? { user_id: p.id, email: p.email, full_name: p.full_name, roles: [] };
+      const entry = map.get(p.id) ?? { user_id: p.id, email: p.email ?? "", full_name: p.full_name ?? p.email ?? "Unknown", roles: [] };
       entry.roles.push(r.role as AppRole);
       map.set(p.id, entry);
     }
