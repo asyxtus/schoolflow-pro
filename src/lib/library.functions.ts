@@ -24,15 +24,25 @@ export const listBooks = createServerFn({ method: "GET" })
 
 export const upsertBook = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id?: string; title: string; author?: string; isbn?: string; category?: string; publisher?: string; year?: number; location?: string; cover_url?: string }) => d)
+  .inputValidator((d: { id?: string; title: string; author?: string; isbn?: string; category?: string; publisher?: string; year?: number; location?: string; cover_url?: string; initial_copies?: number }) => d)
   .handler(async ({ context, data }) => {
     const schoolId = await getUserSchoolId(context.supabase, context.userId);
     if (!schoolId) throw new Error("No school");
     const row = { school_id: schoolId, title: data.title, author: data.author ?? null, isbn: data.isbn ?? null, category: data.category ?? null, publisher: data.publisher ?? null, year: data.year ?? null, location: data.location ?? null, cover_url: data.cover_url ?? null };
-    const { error } = data.id
-      ? await context.supabase.from("library_books").update(row).eq("id", data.id)
-      : await context.supabase.from("library_books").insert(row);
-    if (error) throw new Error(error.message);
+    if (data.id) {
+      const { error } = await context.supabase.from("library_books").update(row).eq("id", data.id);
+      if (error) throw new Error(error.message);
+    } else {
+      const { data: inserted, error } = await context.supabase.from("library_books").insert(row).select("id").single();
+      if (error) throw new Error(error.message);
+      const n = Math.max(0, Math.min(100, Math.floor(data.initial_copies ?? 1)));
+      if (inserted && n > 0) {
+        const copies = Array.from({ length: n }, () => ({
+          school_id: schoolId, book_id: inserted.id, status: "available" as CopyStatus,
+        }));
+        await context.supabase.from("library_copies").insert(copies);
+      }
+    }
     return { ok: true };
   });
 
