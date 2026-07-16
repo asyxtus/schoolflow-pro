@@ -87,7 +87,7 @@ function CatalogTab() {
   const del = useServerFn(deleteBook);
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<{ id?: string; title: string; author: string; isbn: string; category: string; publisher: string; year: number | ""; location: string }>({ title: "", author: "", isbn: "", category: "", publisher: "", year: "", location: "" });
+  const [form, setForm] = useState<{ id?: string; title: string; author: string; isbn: string; category: string; publisher: string; year: number | ""; location: string; initial_copies: number }>({ title: "", author: "", isbn: "", category: "", publisher: "", year: "", location: "", initial_copies: 1 });
   const [copiesOpen, setCopiesOpen] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
@@ -98,7 +98,11 @@ function CatalogTab() {
 
   async function submit() {
     if (!form.title) { toast.error("Title required"); return; }
-    try { await save({ data: { ...form, year: form.year === "" ? undefined : Number(form.year) } }); toast.success("Saved"); setOpen(false); router.invalidate(); }
+    try {
+      await save({ data: { ...form, year: form.year === "" ? undefined : Number(form.year), initial_copies: form.id ? undefined : form.initial_copies } });
+      toast.success(form.id ? "Saved" : `Saved · ${form.initial_copies} cop${form.initial_copies === 1 ? "y" : "ies"} added`);
+      setOpen(false); router.invalidate();
+    }
     catch (e) { toast.error((e as Error).message); }
   }
 
