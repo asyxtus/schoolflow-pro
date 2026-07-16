@@ -50,6 +50,7 @@ const groups = [
       { title: "Students", url: "/students", icon: Users },
       { title: "Admissions", url: "/admissions", icon: ClipboardList },
       { title: "Classes", url: "/classes", icon: GraduationCap },
+      { title: "Manage classes", url: "/classes/manage", icon: BookOpen },
       { title: "Attendance", url: "/attendance", icon: CalendarCheck },
     ],
   },
@@ -57,8 +58,8 @@ const groups = [
     label: "Academics",
     items: [
       { title: "Timetable", url: "/timetable", icon: BookOpen },
-      { title: "Reports", url: "/reports", icon: FileText },
-      { title: "Bulletins", url: "/reports/coefficients", icon: ScrollText },
+      { title: "Academic Reports", url: "/reports", icon: FileText },
+      { title: "Bulletin coefficients", url: "/reports/coefficients", icon: ScrollText },
     ],
   },
   {
