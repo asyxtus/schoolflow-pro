@@ -204,6 +204,41 @@ export const updateReservation = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const fulfilReservation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; due_date: string }) => d)
+  .handler(async ({ context, data }) => {
+    const schoolId = await getUserSchoolId(context.supabase, context.userId);
+    if (!schoolId) throw new Error("No school");
+    const { data: res, error: rErr } = await context.supabase
+      .from("library_reservations")
+      .select("id, book_id, borrower_type, student_id, staff_id, status")
+      .eq("id", data.id)
+      .single();
+    if (rErr || !res) throw new Error("Reservation not found");
+    if (res.status !== "pending") throw new Error("Reservation is not pending");
+    const { data: copy, error: cErr } = await context.supabase
+      .from("library_copies")
+      .select("id")
+      .eq("book_id", res.book_id)
+      .eq("status", "available")
+      .limit(1)
+      .maybeSingle();
+    if (cErr) throw new Error(cErr.message);
+    if (!copy) throw new Error("No available copy — add copies first");
+    const { error: lErr } = await context.supabase.from("library_loans").insert({
+      school_id: schoolId, copy_id: copy.id, book_id: res.book_id,
+      borrower_type: res.borrower_type,
+      student_id: res.borrower_type === "student" ? res.student_id : null,
+      staff_id: res.borrower_type === "staff" ? res.staff_id : null,
+      due_date: data.due_date, recorded_by: context.userId,
+    });
+    if (lErr) throw new Error(lErr.message);
+    await context.supabase.from("library_copies").update({ status: "loaned" }).eq("id", copy.id);
+    await context.supabase.from("library_reservations").update({ status: "fulfilled" }).eq("id", res.id);
+    return { ok: true };
+  });
+
 // ── Search helpers ──────────────────────────────────────────────────────
 export const searchLibraryStudents = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
