@@ -125,6 +125,9 @@ function CatalogTab() {
                 <div><Label>Publisher</Label><Input value={form.publisher} onChange={(e) => setForm({ ...form, publisher: e.target.value })} /></div>
                 <div><Label>Year</Label><Input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value === "" ? "" : Number(e.target.value) })} /></div>
                 <div><Label>Shelf / location</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></div>
+                {!form.id && (
+                  <div><Label>Initial copies</Label><Input type="number" min={0} max={100} value={form.initial_copies} onChange={(e) => setForm({ ...form, initial_copies: Math.max(0, Number(e.target.value || 0)) })} /></div>
+                )}
               </div>
               <DialogFooter><Button onClick={submit}>Save</Button></DialogFooter>
             </DialogContent>
