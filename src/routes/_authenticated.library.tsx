@@ -17,7 +17,7 @@ import {
   listBooks, upsertBook, deleteBook,
   listCopies, addCopies, deleteCopy,
   listLoans, createLoan, returnLoan,
-  listReservations, createReservation, updateReservation,
+  listReservations, createReservation, updateReservation, fulfilReservation,
   searchLibraryStudents, listStaffLite, librarySummary,
   type BorrowerType, type LoanStatus, type ReservationStatus,
 } from "@/lib/library.functions";
