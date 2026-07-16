@@ -17,7 +17,7 @@ import {
   listBooks, upsertBook, deleteBook,
   listCopies, addCopies, deleteCopy,
   listLoans, createLoan, returnLoan,
-  listReservations, createReservation, updateReservation,
+  listReservations, createReservation, updateReservation, fulfilReservation,
   searchLibraryStudents, listStaffLite, librarySummary,
   type BorrowerType, type LoanStatus, type ReservationStatus,
 } from "@/lib/library.functions";
@@ -87,7 +87,7 @@ function CatalogTab() {
   const del = useServerFn(deleteBook);
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<{ id?: string; title: string; author: string; isbn: string; category: string; publisher: string; year: number | ""; location: string }>({ title: "", author: "", isbn: "", category: "", publisher: "", year: "", location: "" });
+  const [form, setForm] = useState<{ id?: string; title: string; author: string; isbn: string; category: string; publisher: string; year: number | ""; location: string; initial_copies: number }>({ title: "", author: "", isbn: "", category: "", publisher: "", year: "", location: "", initial_copies: 1 });
   const [copiesOpen, setCopiesOpen] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
@@ -98,7 +98,11 @@ function CatalogTab() {
 
   async function submit() {
     if (!form.title) { toast.error("Title required"); return; }
-    try { await save({ data: { ...form, year: form.year === "" ? undefined : Number(form.year) } }); toast.success("Saved"); setOpen(false); router.invalidate(); }
+    try {
+      await save({ data: { ...form, year: form.year === "" ? undefined : Number(form.year), initial_copies: form.id ? undefined : form.initial_copies } });
+      toast.success(form.id ? "Saved" : `Saved · ${form.initial_copies} cop${form.initial_copies === 1 ? "y" : "ies"} added`);
+      setOpen(false); router.invalidate();
+    }
     catch (e) { toast.error((e as Error).message); }
   }
 
@@ -110,7 +114,7 @@ function CatalogTab() {
             <div className="relative"><Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="w-64 pl-8" placeholder="Search title, author, ISBN" value={q} onChange={(e) => setQ(e.target.value)} /></div>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild><Button size="sm" onClick={() => setForm({ title: "", author: "", isbn: "", category: "", publisher: "", year: "", location: "" })}><Plus className="mr-1 h-4 w-4" />Add book</Button></DialogTrigger>
+            <DialogTrigger asChild><Button size="sm" onClick={() => setForm({ title: "", author: "", isbn: "", category: "", publisher: "", year: "", location: "", initial_copies: 1 })}><Plus className="mr-1 h-4 w-4" />Add book</Button></DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>{form.id ? "Edit" : "Add"} book</DialogTitle></DialogHeader>
               <div className="grid gap-3 md:grid-cols-2">
@@ -121,6 +125,9 @@ function CatalogTab() {
                 <div><Label>Publisher</Label><Input value={form.publisher} onChange={(e) => setForm({ ...form, publisher: e.target.value })} /></div>
                 <div><Label>Year</Label><Input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value === "" ? "" : Number(e.target.value) })} /></div>
                 <div><Label>Shelf / location</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></div>
+                {!form.id && (
+                  <div><Label>Initial copies</Label><Input type="number" min={0} max={100} value={form.initial_copies} onChange={(e) => setForm({ ...form, initial_copies: Math.max(0, Number(e.target.value || 0)) })} /></div>
+                )}
               </div>
               <DialogFooter><Button onClick={submit}>Save</Button></DialogFooter>
             </DialogContent>
@@ -141,7 +148,7 @@ function CatalogTab() {
                     <td>{b.available_copies}</td>
                     <td className="text-right">
                       <Button size="icon" variant="ghost" onClick={() => setCopiesOpen(b.id)}><CopyIcon className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => { setForm({ id: b.id, title: b.title, author: b.author ?? "", isbn: b.isbn ?? "", category: b.category ?? "", publisher: b.publisher ?? "", year: b.year ?? "", location: b.location ?? "" }); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => { setForm({ id: b.id, title: b.title, author: b.author ?? "", isbn: b.isbn ?? "", category: b.category ?? "", publisher: b.publisher ?? "", year: b.year ?? "", location: b.location ?? "", initial_copies: 0 }); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" onClick={async () => { if (confirm("Delete book and all copies?")) { await del({ data: { id: b.id } }); router.invalidate(); } }}><Trash2 className="h-4 w-4" /></Button>
                     </td>
                   </tr>
@@ -247,7 +254,13 @@ function LoansTab() {
               <div><Label>Book</Label>
                 <Select value={form.book_id} onValueChange={loadCopies}>
                   <SelectTrigger><SelectValue placeholder="Select book" /></SelectTrigger>
-                  <SelectContent>{books.filter((b) => b.available_copies > 0).map((b) => <SelectItem key={b.id} value={b.id}>{b.title} · {b.available_copies} avail.</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {books.map((b) => (
+                      <SelectItem key={b.id} value={b.id} disabled={b.available_copies <= 0}>
+                        {b.title} · {b.available_copies > 0 ? `${b.available_copies} avail.` : "no copies — add copies first"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
               {form.book_id && (
@@ -343,6 +356,7 @@ function ReservationsTab() {
   const router = useRouter();
   const create = useServerFn(createReservation);
   const update = useServerFn(updateReservation);
+  const fulfil = useServerFn(fulfilReservation);
   const search = useServerFn(searchLibraryStudents);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<{ book_id: string; borrower_type: BorrowerType; student_id: string; student_name: string; staff_id: string; note: string }>({ book_id: "", borrower_type: "student", student_id: "", student_name: "", staff_id: "", note: "" });
@@ -427,7 +441,15 @@ function ReservationsTab() {
                     <td className="text-right">
                       {r.status === "pending" && (
                         <>
-                          <Button size="sm" variant="outline" onClick={async () => { await update({ data: { id: r.id, status: "fulfilled" as ReservationStatus } }); router.invalidate(); }}>Fulfill</Button>
+                          <Button size="sm" variant="outline" disabled={!avail} title={avail ? "Check out to reserver" : "No copies available"}
+                            onClick={async () => {
+                              try {
+                                const due = new Date(); due.setDate(due.getDate() + 14);
+                                await fulfil({ data: { id: r.id, due_date: due.toISOString().slice(0, 10) } });
+                                toast.success("Loan created for reserver");
+                                router.invalidate();
+                              } catch (e) { toast.error((e as Error).message); }
+                            }}>Fulfill</Button>
                           <Button size="sm" variant="ghost" className="ml-1" onClick={async () => { await update({ data: { id: r.id, status: "cancelled" as ReservationStatus } }); router.invalidate(); }}>Cancel</Button>
                         </>
                       )}

@@ -3,6 +3,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getUserSchoolId } from "./school-context";
 
 export type PaymentMethod = "cash" | "momo" | "bank" | "cheque" | "other";
+export type FeeKind = "registration" | "tuition" | "other";
+export type FeeInstallment = { label: string; amount_fcfa: number; due_date?: string | null };
 
 export const listFeeStructures = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -21,17 +23,37 @@ export const listFeeStructures = createServerFn({ method: "GET" })
 
 export const upsertFeeStructure = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id?: string; class_name: string; label: string; amount_fcfa: number; academic_year?: string }) => d)
+  .inputValidator(
+    (d: {
+      id?: string;
+      class_name: string;
+      label: string;
+      amount_fcfa: number;
+      academic_year?: string;
+      kind?: FeeKind;
+      installments?: FeeInstallment[];
+      required_at_registration?: boolean;
+      due_date?: string | null;
+    }) => d,
+  )
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) throw new Error("No school assigned");
+    const installments = data.installments ?? [];
+    const total = installments.length
+      ? installments.reduce((s, i) => s + Number(i.amount_fcfa || 0), 0)
+      : data.amount_fcfa;
     const row = {
       school_id: schoolId,
       class_name: data.class_name,
       label: data.label,
-      amount_fcfa: data.amount_fcfa,
+      amount_fcfa: total,
       academic_year: data.academic_year ?? null,
+      kind: data.kind ?? "tuition",
+      installments: installments as unknown as never,
+      required_at_registration: data.required_at_registration ?? (data.kind === "registration"),
+      due_date: data.due_date ?? null,
     };
     const { error } = data.id
       ? await supabase.from("fee_structures").update(row).eq("id", data.id)

@@ -37,6 +37,7 @@ import { Route as AuthenticatedReportsFinanceRouteImport } from './routes/_authe
 import { Route as AuthenticatedReportsCoefficientsRouteImport } from './routes/_authenticated.reports.coefficients'
 import { Route as AuthenticatedPayrollRunIdRouteImport } from './routes/_authenticated.payroll.$runId'
 import { Route as AuthenticatedHrStaffIdRouteImport } from './routes/_authenticated.hr.$staffId'
+import { Route as AuthenticatedClassesManageRouteImport } from './routes/_authenticated.classes.manage'
 import { Route as AuthenticatedAdmissionsNewRouteImport } from './routes/_authenticated.admissions.new'
 import { Route as AuthenticatedPayrollPayslipPayslipIdRouteImport } from './routes/_authenticated.payroll.payslip.$payslipId'
 import { Route as AuthenticatedFinanceReceiptPaymentIdRouteImport } from './routes/_authenticated.finance.receipt.$paymentId'
@@ -190,6 +191,12 @@ const AuthenticatedHrStaffIdRoute = AuthenticatedHrStaffIdRouteImport.update({
   path: '/$staffId',
   getParentRoute: () => AuthenticatedHrRoute,
 } as any)
+const AuthenticatedClassesManageRoute =
+  AuthenticatedClassesManageRouteImport.update({
+    id: '/manage',
+    path: '/manage',
+    getParentRoute: () => AuthenticatedClassesRoute,
+  } as any)
 const AuthenticatedAdmissionsNewRoute =
   AuthenticatedAdmissionsNewRouteImport.update({
     id: '/new',
@@ -223,7 +230,7 @@ export interface FileRoutesByFullPath {
   '/admissions': typeof AuthenticatedAdmissionsRouteWithChildren
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/boarding': typeof AuthenticatedBoardingRoute
-  '/classes': typeof AuthenticatedClassesRoute
+  '/classes': typeof AuthenticatedClassesRouteWithChildren
   '/finance': typeof AuthenticatedFinanceRouteWithChildren
   '/hr': typeof AuthenticatedHrRouteWithChildren
   '/library': typeof AuthenticatedLibraryRoute
@@ -235,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/transport': typeof AuthenticatedTransportRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/classes/manage': typeof AuthenticatedClassesManageRoute
   '/hr/$staffId': typeof AuthenticatedHrStaffIdRoute
   '/payroll/$runId': typeof AuthenticatedPayrollRunIdRoute
   '/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
@@ -255,7 +263,7 @@ export interface FileRoutesByTo {
   '/admissions': typeof AuthenticatedAdmissionsRouteWithChildren
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/boarding': typeof AuthenticatedBoardingRoute
-  '/classes': typeof AuthenticatedClassesRoute
+  '/classes': typeof AuthenticatedClassesRouteWithChildren
   '/finance': typeof AuthenticatedFinanceRouteWithChildren
   '/hr': typeof AuthenticatedHrRouteWithChildren
   '/library': typeof AuthenticatedLibraryRoute
@@ -268,6 +276,7 @@ export interface FileRoutesByTo {
   '/wallet': typeof AuthenticatedWalletRoute
   '/': typeof AuthenticatedIndexRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/classes/manage': typeof AuthenticatedClassesManageRoute
   '/hr/$staffId': typeof AuthenticatedHrStaffIdRoute
   '/payroll/$runId': typeof AuthenticatedPayrollRunIdRoute
   '/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
@@ -290,7 +299,7 @@ export interface FileRoutesById {
   '/_authenticated/admissions': typeof AuthenticatedAdmissionsRouteWithChildren
   '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
   '/_authenticated/boarding': typeof AuthenticatedBoardingRoute
-  '/_authenticated/classes': typeof AuthenticatedClassesRoute
+  '/_authenticated/classes': typeof AuthenticatedClassesRouteWithChildren
   '/_authenticated/finance': typeof AuthenticatedFinanceRouteWithChildren
   '/_authenticated/hr': typeof AuthenticatedHrRouteWithChildren
   '/_authenticated/library': typeof AuthenticatedLibraryRoute
@@ -303,6 +312,7 @@ export interface FileRoutesById {
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admissions/new': typeof AuthenticatedAdmissionsNewRoute
+  '/_authenticated/classes/manage': typeof AuthenticatedClassesManageRoute
   '/_authenticated/hr/$staffId': typeof AuthenticatedHrStaffIdRoute
   '/_authenticated/payroll/$runId': typeof AuthenticatedPayrollRunIdRoute
   '/_authenticated/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
@@ -338,6 +348,7 @@ export interface FileRouteTypes {
     | '/transport'
     | '/wallet'
     | '/admissions/new'
+    | '/classes/manage'
     | '/hr/$staffId'
     | '/payroll/$runId'
     | '/reports/coefficients'
@@ -371,6 +382,7 @@ export interface FileRouteTypes {
     | '/wallet'
     | '/'
     | '/admissions/new'
+    | '/classes/manage'
     | '/hr/$staffId'
     | '/payroll/$runId'
     | '/reports/coefficients'
@@ -405,6 +417,7 @@ export interface FileRouteTypes {
     | '/_authenticated/wallet'
     | '/_authenticated/'
     | '/_authenticated/admissions/new'
+    | '/_authenticated/classes/manage'
     | '/_authenticated/hr/$staffId'
     | '/_authenticated/payroll/$runId'
     | '/_authenticated/reports/coefficients'
@@ -623,6 +636,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHrStaffIdRouteImport
       parentRoute: typeof AuthenticatedHrRoute
     }
+    '/_authenticated/classes/manage': {
+      id: '/_authenticated/classes/manage'
+      path: '/manage'
+      fullPath: '/classes/manage'
+      preLoaderRoute: typeof AuthenticatedClassesManageRouteImport
+      parentRoute: typeof AuthenticatedClassesRoute
+    }
     '/_authenticated/admissions/new': {
       id: '/_authenticated/admissions/new'
       path: '/new'
@@ -667,6 +687,17 @@ const AuthenticatedAdmissionsRouteWithChildren =
   AuthenticatedAdmissionsRoute._addFileChildren(
     AuthenticatedAdmissionsRouteChildren,
   )
+
+interface AuthenticatedClassesRouteChildren {
+  AuthenticatedClassesManageRoute: typeof AuthenticatedClassesManageRoute
+}
+
+const AuthenticatedClassesRouteChildren: AuthenticatedClassesRouteChildren = {
+  AuthenticatedClassesManageRoute: AuthenticatedClassesManageRoute,
+}
+
+const AuthenticatedClassesRouteWithChildren =
+  AuthenticatedClassesRoute._addFileChildren(AuthenticatedClassesRouteChildren)
 
 interface AuthenticatedFinanceRouteChildren {
   AuthenticatedFinanceReceiptPaymentIdRoute: typeof AuthenticatedFinanceReceiptPaymentIdRoute
@@ -740,7 +771,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdmissionsRoute: typeof AuthenticatedAdmissionsRouteWithChildren
   AuthenticatedAttendanceRoute: typeof AuthenticatedAttendanceRoute
   AuthenticatedBoardingRoute: typeof AuthenticatedBoardingRoute
-  AuthenticatedClassesRoute: typeof AuthenticatedClassesRoute
+  AuthenticatedClassesRoute: typeof AuthenticatedClassesRouteWithChildren
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRouteWithChildren
   AuthenticatedHrRoute: typeof AuthenticatedHrRouteWithChildren
   AuthenticatedLibraryRoute: typeof AuthenticatedLibraryRoute
@@ -763,7 +794,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdmissionsRoute: AuthenticatedAdmissionsRouteWithChildren,
   AuthenticatedAttendanceRoute: AuthenticatedAttendanceRoute,
   AuthenticatedBoardingRoute: AuthenticatedBoardingRoute,
-  AuthenticatedClassesRoute: AuthenticatedClassesRoute,
+  AuthenticatedClassesRoute: AuthenticatedClassesRouteWithChildren,
   AuthenticatedFinanceRoute: AuthenticatedFinanceRouteWithChildren,
   AuthenticatedHrRoute: AuthenticatedHrRouteWithChildren,
   AuthenticatedLibraryRoute: AuthenticatedLibraryRoute,

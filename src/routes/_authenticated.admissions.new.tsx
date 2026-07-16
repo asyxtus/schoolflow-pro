@@ -19,8 +19,9 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { createApplicant } from "@/lib/admissions.functions";
+import { useClassOptions } from "@/hooks/use-classes";
 
-const DESIRED_CLASSES = [
+const FALLBACK_CLASSES = [
   "Form 1",
   "Form 2",
   "Form 3",
@@ -39,8 +40,10 @@ export const Route = createFileRoute("/_authenticated/admissions/new")({
 function NewApplicationPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { data: classesData = [] } = useClassOptions();
+  const classNames = classesData.length > 0 ? classesData.filter((c) => c.active).map((c) => c.name) : FALLBACK_CLASSES;
   const [gender, setGender] = useState<"male" | "female">("male");
-  const [desiredClass, setDesiredClass] = useState(DESIRED_CLASSES[0]);
+  const [desiredClass, setDesiredClass] = useState(classNames[0] ?? "");
 
   const mutation = useMutation({
     mutationFn: createApplicant,
@@ -129,7 +132,7 @@ function NewApplicationPage() {
               <Select value={desiredClass} onValueChange={setDesiredClass}>
                 <SelectTrigger id="desiredClass"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {DESIRED_CLASSES.map((c) => (
+                  {classNames.map((c) => (
                     <SelectItem key={c} value={c}>{c}</SelectItem>
                   ))}
                 </SelectContent>

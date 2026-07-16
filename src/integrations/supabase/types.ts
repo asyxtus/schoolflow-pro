@@ -547,6 +547,102 @@ export type Database = {
           },
         ]
       }
+      class_subjects: {
+        Row: {
+          class_id: string
+          coefficient: number
+          created_at: string
+          id: string
+          school_id: string
+          subject: string
+          teacher_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          coefficient?: number
+          created_at?: string
+          id?: string
+          school_id: string
+          subject: string
+          teacher_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          coefficient?: number
+          created_at?: string
+          id?: string
+          school_id?: string
+          subject?: string
+          teacher_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_subjects_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_subjects_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_subjects_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classes: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          level: string | null
+          name: string
+          school_id: string
+          sections: string[]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          level?: string | null
+          name: string
+          school_id: string
+          sections?: string[]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          level?: string | null
+          name?: string
+          school_id?: string
+          sections?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classes_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dorm_rooms: {
         Row: {
           capacity: number
@@ -648,8 +744,12 @@ export type Database = {
           amount_fcfa: number
           class_name: string
           created_at: string
+          due_date: string | null
           id: string
+          installments: Json
+          kind: string
           label: string
+          required_at_registration: boolean
           school_id: string
           updated_at: string
         }
@@ -658,8 +758,12 @@ export type Database = {
           amount_fcfa: number
           class_name: string
           created_at?: string
+          due_date?: string | null
           id?: string
+          installments?: Json
+          kind?: string
           label: string
+          required_at_registration?: boolean
           school_id: string
           updated_at?: string
         }
@@ -668,8 +772,12 @@ export type Database = {
           amount_fcfa?: number
           class_name?: string
           created_at?: string
+          due_date?: string | null
           id?: string
+          installments?: Json
+          kind?: string
           label?: string
+          required_at_registration?: boolean
           school_id?: string
           updated_at?: string
         }
@@ -2307,6 +2415,13 @@ export type Database = {
         | "secretary"
         | "parent"
         | "student"
+        | "discipline_master"
+        | "sports_master"
+        | "dean_of_studies"
+        | "counsellor"
+        | "boarding_master"
+        | "receptionist"
+        | "nurse"
       attendance_status: "present" | "absent" | "late" | "excused"
       contract_type:
         | "permanent"
@@ -2487,6 +2602,13 @@ export const Constants = {
         "secretary",
         "parent",
         "student",
+        "discipline_master",
+        "sports_master",
+        "dean_of_studies",
+        "counsellor",
+        "boarding_master",
+        "receptionist",
+        "nurse",
       ],
       attendance_status: ["present", "absent", "late", "excused"],
       contract_type: [
