@@ -114,7 +114,7 @@ function CatalogTab() {
             <div className="relative"><Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="w-64 pl-8" placeholder="Search title, author, ISBN" value={q} onChange={(e) => setQ(e.target.value)} /></div>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild><Button size="sm" onClick={() => setForm({ title: "", author: "", isbn: "", category: "", publisher: "", year: "", location: "" })}><Plus className="mr-1 h-4 w-4" />Add book</Button></DialogTrigger>
+            <DialogTrigger asChild><Button size="sm" onClick={() => setForm({ title: "", author: "", isbn: "", category: "", publisher: "", year: "", location: "", initial_copies: 1 })}><Plus className="mr-1 h-4 w-4" />Add book</Button></DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>{form.id ? "Edit" : "Add"} book</DialogTitle></DialogHeader>
               <div className="grid gap-3 md:grid-cols-2">
@@ -145,7 +145,7 @@ function CatalogTab() {
                     <td>{b.available_copies}</td>
                     <td className="text-right">
                       <Button size="icon" variant="ghost" onClick={() => setCopiesOpen(b.id)}><CopyIcon className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => { setForm({ id: b.id, title: b.title, author: b.author ?? "", isbn: b.isbn ?? "", category: b.category ?? "", publisher: b.publisher ?? "", year: b.year ?? "", location: b.location ?? "" }); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => { setForm({ id: b.id, title: b.title, author: b.author ?? "", isbn: b.isbn ?? "", category: b.category ?? "", publisher: b.publisher ?? "", year: b.year ?? "", location: b.location ?? "", initial_copies: 0 }); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" onClick={async () => { if (confirm("Delete book and all copies?")) { await del({ data: { id: b.id } }); router.invalidate(); } }}><Trash2 className="h-4 w-4" /></Button>
                     </td>
                   </tr>
