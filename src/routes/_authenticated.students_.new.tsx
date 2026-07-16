@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createStudent } from "@/lib/students.functions";
+import { useClassOptions } from "@/hooks/use-classes";
 
 export const Route = createFileRoute("/_authenticated/students_/new")({
   component: NewStudentPage,
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/_authenticated/students_/new")({
 function NewStudentPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { data: classes = [] } = useClassOptions();
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -129,10 +131,33 @@ function NewStudentPage() {
           <CardHeader><CardTitle className="text-base">Academic</CardTitle></CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <Field label="Class">
-              <Input value={form.className} onChange={(e) => set("className", e.target.value)} placeholder="Form 1" />
+              {classes.length > 0 ? (
+                <Select value={form.className} onValueChange={(v) => { set("className", v); set("section", ""); }}>
+                  <SelectTrigger><SelectValue placeholder="Select class…" /></SelectTrigger>
+                  <SelectContent>
+                    {classes.filter((c) => c.active).map((c) => (
+                      <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input value={form.className} onChange={(e) => set("className", e.target.value)} placeholder="Form 1" />
+              )}
             </Field>
             <Field label="Section">
-              <Input value={form.section} onChange={(e) => set("section", e.target.value)} placeholder="A" />
+              {(() => {
+                const sections = classes.find((c) => c.name === form.className)?.sections ?? [];
+                return sections.length > 0 ? (
+                  <Select value={form.section} onValueChange={(v) => set("section", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select section…" /></SelectTrigger>
+                    <SelectContent>
+                      {sections.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input value={form.section} onChange={(e) => set("section", e.target.value)} placeholder="A" />
+                );
+              })()}
             </Field>
             <Field label="Fee balance (FCFA)">
               <Input type="number" min={0} value={form.feeBalance} onChange={(e) => set("feeBalance", e.target.value)} />
