@@ -445,21 +445,44 @@ function RecordPaymentDialog({
 
 function FeeStructureDialog({
   onSubmit,
-}: { onSubmit: (v: { class_name: string; label: string; amount_fcfa: number; academic_year?: string }) => Promise<void> }) {
+}: { onSubmit: (v: { class_name: string; label: string; amount_fcfa: number; academic_year?: string; kind?: FeeKind; installments?: FeeInstallment[]; required_at_registration?: boolean; due_date?: string | null }) => Promise<void> }) {
   const [open, setOpen] = useState(false);
+  const classesQ = useClassOptions();
   const [className, setClassName] = useState("");
   const [label, setLabel] = useState("");
-  const [amount, setAmount] = useState("");
   const [year, setYear] = useState("");
+  const [kind, setKind] = useState<FeeKind>("tuition");
+  const [required, setRequired] = useState(false);
+  const [installments, setInstallments] = useState<FeeInstallment[]>([
+    { label: "Installment 1", amount_fcfa: 0, due_date: "" },
+  ]);
   const [busy, setBusy] = useState(false);
 
+  const total = installments.reduce((s, i) => s + Number(i.amount_fcfa || 0), 0);
+
+  const update = (idx: number, patch: Partial<FeeInstallment>) => {
+    setInstallments((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+  };
+  const addRow = () => setInstallments((p) => [...p, { label: `Installment ${p.length + 1}`, amount_fcfa: 0, due_date: "" }]);
+  const removeRow = (idx: number) => setInstallments((p) => p.filter((_, i) => i !== idx));
+
   const submit = async () => {
-    const amt = Number(amount);
-    if (!className || !label || !amt) { toast.error("Fill all fields"); return; }
+    if (!className || !label) { toast.error("Class and label are required"); return; }
+    if (!total) { toast.error("Add at least one installment amount"); return; }
     setBusy(true);
     try {
-      await onSubmit({ class_name: className, label, amount_fcfa: amt, academic_year: year || undefined });
-      setOpen(false); setClassName(""); setLabel(""); setAmount(""); setYear("");
+      const cleaned = installments.map((i) => ({ label: i.label, amount_fcfa: Number(i.amount_fcfa || 0), due_date: i.due_date || null }));
+      const firstDue = cleaned.find((i) => i.due_date)?.due_date ?? null;
+      await onSubmit({
+        class_name: className, label, amount_fcfa: total,
+        academic_year: year || undefined, kind,
+        installments: cleaned,
+        required_at_registration: kind === "registration" ? true : required,
+        due_date: firstDue,
+      });
+      setOpen(false);
+      setClassName(""); setLabel(""); setYear(""); setKind("tuition"); setRequired(false);
+      setInstallments([{ label: "Installment 1", amount_fcfa: 0, due_date: "" }]);
     } catch (e) { toast.error((e as Error).message); }
     finally { setBusy(false); }
   };
@@ -469,15 +492,68 @@ function FeeStructureDialog({
       <DialogTrigger asChild>
         <Button><Plus className="mr-2 h-4 w-4" />New fee structure</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-2xl">
         <DialogHeader><DialogTitle>New fee structure</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5"><Label>Class</Label><Input value={className} onChange={(e) => setClassName(e.target.value)} placeholder="Form 1" /></div>
-            <div className="grid gap-1.5"><Label>Academic year</Label><Input value={year} onChange={(e) => setYear(e.target.value)} placeholder="2025/2026" /></div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="grid gap-1.5">
+              <Label>Class</Label>
+              <Select value={className} onValueChange={setClassName}>
+                <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
+                <SelectContent>
+                  {(classesQ.data ?? []).map((c) => (
+                    <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Kind</Label>
+              <Select value={kind} onValueChange={(v) => setKind(v as FeeKind)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="registration">Registration</SelectItem>
+                  <SelectItem value="tuition">Tuition</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Academic year</Label>
+              <Input value={year} onChange={(e) => setYear(e.target.value)} placeholder="2025/2026" />
+            </div>
           </div>
-          <div className="grid gap-1.5"><Label>Label</Label><Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Tuition — Term 1" /></div>
-          <div className="grid gap-1.5"><Label>Amount (FCFA)</Label><Input type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+          <div className="grid gap-1.5">
+            <Label>Label</Label>
+            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={kind === "registration" ? "Registration fee" : "Tuition — 2025/2026"} />
+          </div>
+
+          {kind !== "registration" && (
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={required} onChange={(e) => setRequired(e.target.checked)} />
+              Required before admission
+            </label>
+          )}
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Installments &amp; deadlines</Label>
+              <Button type="button" variant="ghost" size="sm" onClick={addRow}><Plus className="mr-1 h-3 w-3" />Add</Button>
+            </div>
+            <div className="space-y-2">
+              {installments.map((row, idx) => (
+                <div key={idx} className="grid grid-cols-[1fr_140px_160px_auto] gap-2 items-end">
+                  <div className="grid gap-1"><Label className="text-xs">Label</Label><Input value={row.label} onChange={(e) => update(idx, { label: e.target.value })} /></div>
+                  <div className="grid gap-1"><Label className="text-xs">Amount FCFA</Label><Input type="number" min="0" value={row.amount_fcfa || ""} onChange={(e) => update(idx, { amount_fcfa: Number(e.target.value) })} /></div>
+                  <div className="grid gap-1"><Label className="text-xs">Due date</Label><Input type="date" value={row.due_date ?? ""} onChange={(e) => update(idx, { due_date: e.target.value })} /></div>
+                  <Button type="button" size="icon" variant="ghost" onClick={() => removeRow(idx)} disabled={installments.length === 1} aria-label="Remove">
+                    <Trash2 className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <div className="text-right text-sm">Total: <span className="font-semibold">{fmt(total)}</span></div>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
