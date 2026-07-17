@@ -316,9 +316,9 @@ function FinancePage() {
           ) : (
             <Card><CardContent className="p-0"><div className="divide-y">
               {feesQ.data.map((f) => {
-                const inst = (f as { installments?: FeeInstallment[] }).installments ?? [];
-                const kind = (f as { kind?: FeeKind }).kind ?? "tuition";
-                const req = (f as { required_at_registration?: boolean }).required_at_registration;
+                const inst = (Array.isArray(f.installments) ? (f.installments as unknown as FeeInstallment[]) : []);
+                const kind = ((f.kind as FeeKind | null | undefined) ?? "tuition") as FeeKind;
+                const req = f.required_at_registration;
                 return (
                   <div key={f.id} className="p-4">
                     <div className="flex items-center gap-3">
