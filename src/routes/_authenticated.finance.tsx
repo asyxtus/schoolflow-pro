@@ -26,9 +26,11 @@ import { getStudents } from "@/lib/students.functions";
 import {
   financeSummary, listFeeStructures, upsertFeeStructure, deleteFeeStructure,
   listPayments, recordPayment, deletePayment, type PaymentMethod,
+  type FeeKind, type FeeInstallment,
   listStudentFees, upsertStudentFee, deleteStudentFee, bulkAssignFee,
   recomputeAllBalances,
 } from "@/lib/finance.functions";
+import { useClassOptions } from "@/hooks/use-classes";
 
 export const Route = createFileRoute("/_authenticated/finance")({
   component: FinancePage,
@@ -313,21 +315,42 @@ function FinancePage() {
             <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">No fee structures yet.</CardContent></Card>
           ) : (
             <Card><CardContent className="p-0"><div className="divide-y">
-              {feesQ.data.map((f) => (
-                <div key={f.id} className="flex items-center gap-3 p-4">
-                  <Badge variant="secondary">{f.class_name}</Badge>
-                  <div className="flex-1">
-                    <div className="font-medium">{f.label}</div>
-                    {f.academic_year && <div className="text-xs text-muted-foreground">{f.academic_year}</div>}
+              {feesQ.data.map((f) => {
+                const inst = (f as { installments?: FeeInstallment[] }).installments ?? [];
+                const kind = (f as { kind?: FeeKind }).kind ?? "tuition";
+                const req = (f as { required_at_registration?: boolean }).required_at_registration;
+                return (
+                  <div key={f.id} className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="secondary">{f.class_name}</Badge>
+                      <Badge variant={kind === "registration" ? "default" : "outline"} className="capitalize">{kind}</Badge>
+                      {req && <Badge variant="destructive">Required at registration</Badge>}
+                      <div className="flex-1">
+                        <div className="font-medium">{f.label}</div>
+                        {f.academic_year && <div className="text-xs text-muted-foreground">{f.academic_year}</div>}
+                      </div>
+                      <div className="font-semibold">{fmt(f.amount_fcfa)}</div>
+                      <Button size="icon" variant="ghost"
+                        onClick={async () => { await delFee({ data: { id: f.id } }); qc.invalidateQueries({ queryKey: ["fee-structures"] }); }}
+                        aria-label="Delete">
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                    {inst.length > 1 && (
+                      <div className="mt-3 ml-1 grid gap-1 text-xs text-muted-foreground">
+                        {inst.map((i, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary/60" />
+                            <span className="font-medium text-foreground/80">{i.label}</span>
+                            <span>· {fmt(Number(i.amount_fcfa || 0))}</span>
+                            {i.due_date && <span>· Due {new Date(i.due_date).toLocaleDateString()}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="font-semibold">{fmt(f.amount_fcfa)}</div>
-                  <Button size="icon" variant="ghost"
-                    onClick={async () => { await delFee({ data: { id: f.id } }); qc.invalidateQueries({ queryKey: ["fee-structures"] }); }}
-                    aria-label="Delete">
-                    <Trash2 className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div></CardContent></Card>
           )}
         </TabsContent>
