@@ -17,7 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { createStudent } from "@/lib/students.functions";
+import { recordPayment, type PaymentMethod } from "@/lib/finance.functions";
 import { useClassOptions } from "@/hooks/use-classes";
 
 export const Route = createFileRoute("/_authenticated/students_/new")({
@@ -28,6 +30,7 @@ function NewStudentPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: classes = [] } = useClassOptions();
+  const [payFor, setPayFor] = useState<null | { studentId: string; invoices: Array<{ label: string; amount_fcfa: number; due_date: string | null }> }>(null);
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -50,11 +53,16 @@ function NewStudentPage() {
 
   const mutation = useMutation({
     mutationFn: (input: Parameters<typeof createStudent>[0]) => createStudent(input),
-    onSuccess: async ({ id }) => {
+    onSuccess: async ({ id, invoices }) => {
       await qc.invalidateQueries({ queryKey: ["students"] });
       await qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      await qc.invalidateQueries({ queryKey: ["student-fees"] });
       toast.success("Student added");
-      navigate({ to: "/students/$studentId", params: { studentId: id } });
+      if (invoices && invoices.length > 0) {
+        setPayFor({ studentId: id, invoices });
+      } else {
+        navigate({ to: "/students/$studentId", params: { studentId: id } });
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -199,6 +207,20 @@ function NewStudentPage() {
           </Button>
         </div>
       </form>
+
+      {payFor && (
+        <InitialPaymentDialog
+          studentId={payFor.studentId}
+          invoices={payFor.invoices}
+          onDone={() => {
+            const sid = payFor.studentId;
+            setPayFor(null);
+            qc.invalidateQueries({ queryKey: ["students"] });
+            qc.invalidateQueries({ queryKey: ["payments"] });
+            navigate({ to: "/students/$studentId", params: { studentId: sid } });
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -212,5 +234,87 @@ function Field({ label, required, children }: { label: string; required?: boolea
       </Label>
       {children}
     </div>
+  );
+}
+
+const fmt = (n: number) => new Intl.NumberFormat("fr-FR").format(n).replace(/,/g, " ") + " FCFA";
+
+function InitialPaymentDialog({
+  studentId, invoices, onDone,
+}: {
+  studentId: string;
+  invoices: Array<{ label: string; amount_fcfa: number; due_date: string | null }>;
+  onDone: () => void;
+}) {
+  const total = invoices.reduce((s, i) => s + i.amount_fcfa, 0);
+  const [amount, setAmount] = useState(String(invoices[0]?.amount_fcfa ?? 0));
+  const [method, setMethod] = useState<PaymentMethod>("cash");
+  const [reference, setReference] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    const amt = Number(amount);
+    if (!amt || amt <= 0) { toast.error("Enter an amount"); return; }
+    setBusy(true);
+    try {
+      await recordPayment({ data: { student_id: studentId, amount_fcfa: amt, method, reference: reference || undefined } });
+      toast.success("Payment recorded");
+      onDone();
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onDone(); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Record initial payment</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="rounded-md border border-border bg-muted/30 p-3">
+            <div className="text-xs text-muted-foreground mb-2">Invoices created for this student</div>
+            <div className="space-y-1 text-sm">
+              {invoices.map((i, idx) => (
+                <div key={idx} className="flex items-center justify-between">
+                  <span>{i.label}{i.due_date && <span className="text-xs text-muted-foreground"> · Due {new Date(i.due_date).toLocaleDateString()}</span>}</span>
+                  <span className="font-medium">{fmt(i.amount_fcfa)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-2 border-t border-border pt-2 flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Total owed</span>
+              <span className="font-semibold">{fmt(total)}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <Label>Amount to pay now (FCFA)</Label>
+              <Input type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Method</Label>
+              <Select value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="momo">Mobile Money</SelectItem>
+                  <SelectItem value="bank">Bank transfer</SelectItem>
+                  <SelectItem value="cheque">Cheque</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Reference (optional)</Label>
+            <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="MoMo txn ID, receipt no." />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onDone} disabled={busy}>Skip for now</Button>
+          <Button onClick={submit} disabled={busy}>{busy ? "Saving…" : "Record payment"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
