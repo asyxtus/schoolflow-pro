@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Wallet, Receipt, TrendingUp, Users, Plus, Trash2, Printer, Download, RefreshCw, FileText } from "lucide-react";
+import { Wallet, Receipt, TrendingUp, Users, Plus, Trash2, Printer, Download, RefreshCw, FileText, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
@@ -330,6 +330,22 @@ function FinancePage() {
                         {f.academic_year && <div className="text-xs text-muted-foreground">{f.academic_year}</div>}
                       </div>
                       <div className="font-semibold">{fmt(f.amount_fcfa)}</div>
+                      <FeeStructureDialog
+                        trigger={
+                          <Button size="icon" variant="ghost" aria-label="Edit"><Pencil className="h-4 w-4 text-muted-foreground" /></Button>
+                        }
+                        initial={{
+                          id: f.id, class_name: f.class_name, label: f.label,
+                          academic_year: f.academic_year ?? "", kind,
+                          required_at_registration: !!req,
+                          installments: inst.length ? inst : [{ label: f.label, amount_fcfa: f.amount_fcfa, due_date: f.due_date ?? "" }],
+                        }}
+                        onSubmit={async (v) => {
+                          await upsertFee({ data: v });
+                          qc.invalidateQueries({ queryKey: ["fee-structures"] });
+                          toast.success("Fee structure updated");
+                        }}
+                      />
                       <Button size="icon" variant="ghost"
                         onClick={async () => { await delFee({ data: { id: f.id } }); qc.invalidateQueries({ queryKey: ["fee-structures"] }); }}
                         aria-label="Delete">
@@ -444,18 +460,24 @@ function RecordPaymentDialog({
 }
 
 function FeeStructureDialog({
-  onSubmit,
-}: { onSubmit: (v: { class_name: string; label: string; amount_fcfa: number; academic_year?: string; kind?: FeeKind; installments?: FeeInstallment[]; required_at_registration?: boolean; due_date?: string | null }) => Promise<void> }) {
+  onSubmit, initial, trigger,
+}: {
+  onSubmit: (v: { id?: string; class_name: string; label: string; amount_fcfa: number; academic_year?: string; kind?: FeeKind; installments?: FeeInstallment[]; required_at_registration?: boolean; due_date?: string | null }) => Promise<void>;
+  initial?: { id?: string; class_name?: string; label?: string; academic_year?: string; kind?: FeeKind; required_at_registration?: boolean; installments?: FeeInstallment[] };
+  trigger?: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const classesQ = useClassOptions();
-  const [className, setClassName] = useState("");
-  const [label, setLabel] = useState("");
-  const [year, setYear] = useState("");
-  const [kind, setKind] = useState<FeeKind>("tuition");
-  const [required, setRequired] = useState(false);
-  const [installments, setInstallments] = useState<FeeInstallment[]>([
-    { label: "Installment 1", amount_fcfa: 0, due_date: "" },
-  ]);
+  const [className, setClassName] = useState(initial?.class_name ?? "");
+  const [label, setLabel] = useState(initial?.label ?? "");
+  const [year, setYear] = useState(initial?.academic_year ?? "");
+  const [kind, setKind] = useState<FeeKind>(initial?.kind ?? "tuition");
+  const [required, setRequired] = useState(initial?.required_at_registration ?? false);
+  const [installments, setInstallments] = useState<FeeInstallment[]>(
+    initial?.installments && initial.installments.length > 0
+      ? initial.installments
+      : [{ label: "Installment 1", amount_fcfa: 0, due_date: "" }]
+  );
   const [busy, setBusy] = useState(false);
 
   const total = installments.reduce((s, i) => s + Number(i.amount_fcfa || 0), 0);
@@ -474,6 +496,7 @@ function FeeStructureDialog({
       const cleaned = installments.map((i) => ({ label: i.label, amount_fcfa: Number(i.amount_fcfa || 0), due_date: i.due_date || null }));
       const firstDue = cleaned.find((i) => i.due_date)?.due_date ?? null;
       await onSubmit({
+        id: initial?.id,
         class_name: className, label, amount_fcfa: total,
         academic_year: year || undefined, kind,
         installments: cleaned,
@@ -481,8 +504,10 @@ function FeeStructureDialog({
         due_date: firstDue,
       });
       setOpen(false);
-      setClassName(""); setLabel(""); setYear(""); setKind("tuition"); setRequired(false);
-      setInstallments([{ label: "Installment 1", amount_fcfa: 0, due_date: "" }]);
+      if (!initial?.id) {
+        setClassName(""); setLabel(""); setYear(""); setKind("tuition"); setRequired(false);
+        setInstallments([{ label: "Installment 1", amount_fcfa: 0, due_date: "" }]);
+      }
     } catch (e) { toast.error((e as Error).message); }
     finally { setBusy(false); }
   };
@@ -490,10 +515,10 @@ function FeeStructureDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button><Plus className="mr-2 h-4 w-4" />New fee structure</Button>
+        {trigger ?? <Button><Plus className="mr-2 h-4 w-4" />New fee structure</Button>}
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
-        <DialogHeader><DialogTitle>New fee structure</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{initial?.id ? "Edit fee structure" : "New fee structure"}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <div className="grid gap-1.5">
