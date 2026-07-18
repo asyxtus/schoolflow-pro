@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Download, Plus, Search, UserPlus } from "lucide-react";
 import { z } from "zod";
@@ -58,6 +58,7 @@ export const Route = createFileRoute("/_authenticated/students")({
 function StudentsPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/students" });
+  const router = useRouter();
   const { data: students } = useSuspenseQuery(studentsQueryOptions());
 
   const classOptions = useMemo(() => {
@@ -164,7 +165,13 @@ function StudentsPage() {
             </TableHeader>
             <TableBody>
               {filtered.map((s) => (
-                <StudentRow key={s.id} student={s} onOpen={(id) => navigate({ to: "/students/$studentId", params: { studentId: id } })} />
+                <StudentRow
+                  key={s.id}
+                  student={s}
+                  onOpen={(id) =>
+                    router.navigate({ to: "/students/$studentId", params: { studentId: id } })
+                  }
+                />
               ))}
               {filtered.length === 0 && (
                 <TableRow>
