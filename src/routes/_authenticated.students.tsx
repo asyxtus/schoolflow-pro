@@ -164,7 +164,7 @@ function StudentsPage() {
             </TableHeader>
             <TableBody>
               {filtered.map((s) => (
-                <StudentRow key={s.id} student={s} />
+                <StudentRow key={s.id} student={s} onOpen={(id) => navigate({ to: "/students/$studentId", params: { studentId: id } })} />
               ))}
               {filtered.length === 0 && (
                 <TableRow>
@@ -199,17 +199,13 @@ function deriveFeeStatus(balance: number): FeeStatus {
   return balance === 0 ? "paid" : "overdue";
 }
 
-function StudentRow({ student }: { student: StudentRow }) {
+function StudentRow({ student, onOpen }: { student: StudentRow; onOpen: (id: string) => void }) {
   const initials = (student.first_name[0] ?? "") + (student.last_name[0] ?? "");
   const feeStatus = deriveFeeStatus(student.fee_balance ?? 0);
   return (
-    <TableRow className="group">
+    <TableRow className="group cursor-pointer hover:bg-muted/30" onClick={() => onOpen(student.id)}>
       <TableCell>
-        <Link
-          to="/students/$studentId"
-          params={{ studentId: student.id }}
-          className="flex items-center gap-3"
-        >
+        <div className="flex items-center gap-3">
           <span className="w-1 self-stretch rounded-full bg-primary/70 opacity-0 transition group-hover:opacity-100" />
           <Avatar className="h-9 w-9">
             <AvatarFallback className="bg-secondary text-secondary-foreground text-xs font-medium">
@@ -225,7 +221,7 @@ function StudentRow({ student }: { student: StudentRow }) {
               {student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : "—"}
             </div>
           </div>
-        </Link>
+        </div>
       </TableCell>
       <TableCell className="font-mono text-xs">{student.matricule}</TableCell>
       <TableCell>
