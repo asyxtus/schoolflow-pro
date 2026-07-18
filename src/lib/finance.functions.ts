@@ -40,6 +40,19 @@ export const upsertFeeStructure = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) throw new Error("No school assigned");
+    // Enforce single tuition structure per class (allow editing existing one)
+    if ((data.kind ?? "tuition") === "tuition") {
+      const { data: existing } = await supabase
+        .from("fee_structures")
+        .select("id")
+        .eq("school_id", schoolId)
+        .eq("class_name", data.class_name)
+        .eq("kind", "tuition");
+      const others = (existing ?? []).filter((r) => r.id !== data.id);
+      if (others.length > 0) {
+        throw new Error(`A tuition fee already exists for ${data.class_name}. Edit the existing one instead of creating a new one.`);
+      }
+    }
     const installments = data.installments ?? [];
     const total = installments.length
       ? installments.reduce((s, i) => s + Number(i.amount_fcfa || 0), 0)
