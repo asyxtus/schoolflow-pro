@@ -220,9 +220,14 @@ function StudentRow({ student, onOpen }: { student: StudentRow; onOpen: (id: str
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <div className="truncate font-medium text-foreground group-hover:text-primary">
+            <Link
+              to="/students/$studentId"
+              params={{ studentId: student.id }}
+              onClick={(e) => e.stopPropagation()}
+              className="truncate font-medium text-foreground hover:text-primary hover:underline"
+            >
               {student.last_name} {student.first_name}
-            </div>
+            </Link>
             <div className="text-xs text-muted-foreground">
               {student.gender === "male" ? "Male" : student.gender === "female" ? "Female" : "—"} · Born{" "}
               {student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : "—"}
