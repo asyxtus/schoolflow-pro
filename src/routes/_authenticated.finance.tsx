@@ -22,6 +22,7 @@ import {
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { getStudents } from "@/lib/students.functions";
 import {
   financeSummary, listFeeStructures, upsertFeeStructure, deleteFeeStructure,
@@ -385,18 +386,33 @@ function RecordPaymentDialog({
   const [open, setOpen] = useState(false);
   const [studentId, setStudentId] = useState("");
   const [amount, setAmount] = useState("");
+  const [amountTouched, setAmountTouched] = useState(false);
+  const [selectedFees, setSelectedFees] = useState<Record<string, boolean>>({});
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [reference, setReference] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const invFn = useServerFn(listStudentFees);
+  const feesQ = useQuery({
+    queryKey: ["student-fees", studentId],
+    queryFn: () => invFn({ data: { studentId } }),
+    enabled: !!studentId,
+  });
+  const invoices = (feesQ.data ?? []) as Array<{ id: string; label: string; amount_fcfa: number; discount_fcfa: number | null; due_date: string | null }>;
+  const selectedTotal = invoices.reduce((s, i) => s + (selectedFees[i.id] ? Math.max((i.amount_fcfa ?? 0) - (i.discount_fcfa ?? 0), 0) : 0), 0);
+  const effectiveAmount = amountTouched ? amount : (selectedTotal > 0 ? String(selectedTotal) : amount);
+
   const submit = async () => {
-    const amt = Number(amount);
+    const amt = Number(effectiveAmount);
     if (!studentId || !amt || amt <= 0) { toast.error("Pick a student and amount"); return; }
+    const picked = invoices.filter((i) => selectedFees[i.id]);
+    const autoNote = picked.length > 0 ? `Applied to: ${picked.map((p) => p.label).join("; ")}` : "";
+    const finalNote = [autoNote, note].filter(Boolean).join(" · ") || undefined;
     setBusy(true);
     try {
-      await onSubmit({ student_id: studentId, amount_fcfa: amt, method, reference: reference || undefined, note: note || undefined });
-      setOpen(false); setStudentId(""); setAmount(""); setReference(""); setNote(""); setMethod("cash");
+      await onSubmit({ student_id: studentId, amount_fcfa: amt, method, reference: reference || undefined, note: finalNote });
+      setOpen(false); setStudentId(""); setAmount(""); setAmountTouched(false); setSelectedFees({}); setReference(""); setNote(""); setMethod("cash");
     } catch (e) { toast.error((e as Error).message); }
     finally { setBusy(false); }
   };
@@ -406,12 +422,12 @@ function RecordPaymentDialog({
       <DialogTrigger asChild>
         <Button><Plus className="mr-2 h-4 w-4" />Record payment</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>Record payment</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid gap-1.5">
             <Label>Student</Label>
-            <Select value={studentId} onValueChange={setStudentId}>
+            <Select value={studentId} onValueChange={(v) => { setStudentId(v); setSelectedFees({}); setAmountTouched(false); setAmount(""); }}>
               <SelectTrigger><SelectValue placeholder="Select student" /></SelectTrigger>
               <SelectContent>
                 {students.map((s) => (
@@ -422,10 +438,45 @@ function RecordPaymentDialog({
               </SelectContent>
             </Select>
           </div>
+          {studentId && (
+            <div className="rounded-md border border-border bg-muted/30 p-3">
+              <div className="text-xs text-muted-foreground mb-2">
+                {feesQ.isLoading ? "Loading invoices…" : invoices.length === 0 ? "No open invoices for this student" : "Select the fees being paid"}
+              </div>
+              {invoices.length > 0 && (
+                <>
+                  <div className="space-y-1.5 text-sm max-h-48 overflow-y-auto">
+                    {invoices.map((i) => {
+                      const due = Math.max((i.amount_fcfa ?? 0) - (i.discount_fcfa ?? 0), 0);
+                      return (
+                        <label key={i.id} className="flex items-center justify-between gap-3 cursor-pointer rounded px-1 py-0.5 hover:bg-muted/60">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Checkbox
+                              checked={!!selectedFees[i.id]}
+                              onCheckedChange={(v) => setSelectedFees((s) => ({ ...s, [i.id]: !!v }))}
+                            />
+                            <span className="truncate">
+                              {i.label}
+                              {i.due_date && <span className="text-xs text-muted-foreground"> · Due {new Date(i.due_date).toLocaleDateString()}</span>}
+                            </span>
+                          </div>
+                          <span className="font-medium whitespace-nowrap">{fmt(due)}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-2 border-t border-border pt-2 flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Selected total</span>
+                    <span className="font-semibold">{fmt(selectedTotal)}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label>Amount (FCFA)</Label>
-              <Input type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              <Input type="number" min="0" value={effectiveAmount} onChange={(e) => { setAmount(e.target.value); setAmountTouched(true); }} />
             </div>
             <div className="grid gap-1.5">
               <Label>Method</Label>

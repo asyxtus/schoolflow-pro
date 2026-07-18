@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { createStudent } from "@/lib/students.functions";
 import { recordPayment, type PaymentMethod } from "@/lib/finance.functions";
 import { useClassOptions } from "@/hooks/use-classes";
@@ -246,18 +247,30 @@ function InitialPaymentDialog({
   invoices: Array<{ label: string; amount_fcfa: number; due_date: string | null }>;
   onDone: () => void;
 }) {
-  const total = invoices.reduce((s, i) => s + i.amount_fcfa, 0);
-  const [amount, setAmount] = useState(String(invoices[0]?.amount_fcfa ?? 0));
+  const [selected, setSelected] = useState<Record<number, boolean>>(() => {
+    // Default: pre-select registration/required fees
+    const initial: Record<number, boolean> = {};
+    invoices.forEach((inv, idx) => {
+      if (/registration|inscription/i.test(inv.label)) initial[idx] = true;
+    });
+    return initial;
+  });
+  const selectedTotal = invoices.reduce((s, i, idx) => s + (selected[idx] ? i.amount_fcfa : 0), 0);
+  const [amount, setAmount] = useState("");
+  const [amountTouched, setAmountTouched] = useState(false);
+  const effectiveAmount = amountTouched ? amount : String(selectedTotal || "");
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
-    const amt = Number(amount);
+    const amt = Number(effectiveAmount);
     if (!amt || amt <= 0) { toast.error("Enter an amount"); return; }
+    const picked = invoices.filter((_, idx) => selected[idx]);
+    const note = picked.length > 0 ? `Applied to: ${picked.map((p) => p.label).join("; ")}` : undefined;
     setBusy(true);
     try {
-      await recordPayment({ data: { student_id: studentId, amount_fcfa: amt, method, reference: reference || undefined } });
+      await recordPayment({ data: { student_id: studentId, amount_fcfa: amt, method, reference: reference || undefined, note } });
       toast.success("Payment recorded");
       onDone();
     } catch (e) { toast.error((e as Error).message); }
@@ -272,24 +285,38 @@ function InitialPaymentDialog({
         </DialogHeader>
         <div className="space-y-3">
           <div className="rounded-md border border-border bg-muted/30 p-3">
-            <div className="text-xs text-muted-foreground mb-2">Invoices created for this student</div>
-            <div className="space-y-1 text-sm">
+            <div className="text-xs text-muted-foreground mb-2">Select the fees being paid</div>
+            <div className="space-y-1.5 text-sm">
               {invoices.map((i, idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <span>{i.label}{i.due_date && <span className="text-xs text-muted-foreground"> · Due {new Date(i.due_date).toLocaleDateString()}</span>}</span>
-                  <span className="font-medium">{fmt(i.amount_fcfa)}</span>
-                </div>
+                <label key={idx} className="flex items-center justify-between gap-3 cursor-pointer rounded px-1 py-0.5 hover:bg-muted/60">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Checkbox
+                      checked={!!selected[idx]}
+                      onCheckedChange={(v) => setSelected((s) => ({ ...s, [idx]: !!v }))}
+                    />
+                    <span className="truncate">
+                      {i.label}
+                      {i.due_date && <span className="text-xs text-muted-foreground"> · Due {new Date(i.due_date).toLocaleDateString()}</span>}
+                    </span>
+                  </div>
+                  <span className="font-medium whitespace-nowrap">{fmt(i.amount_fcfa)}</span>
+                </label>
               ))}
             </div>
             <div className="mt-2 border-t border-border pt-2 flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Total owed</span>
-              <span className="font-semibold">{fmt(total)}</span>
+              <span className="text-muted-foreground">Selected total</span>
+              <span className="font-semibold">{fmt(selectedTotal)}</span>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label>Amount to pay now (FCFA)</Label>
-              <Input type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              <Input
+                type="number"
+                min="0"
+                value={effectiveAmount}
+                onChange={(e) => { setAmount(e.target.value); setAmountTouched(true); }}
+              />
             </div>
             <div className="grid gap-1.5">
               <Label>Method</Label>

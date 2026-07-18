@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Download, Plus, Search, UserPlus } from "lucide-react";
 import { z } from "zod";
@@ -58,6 +58,7 @@ export const Route = createFileRoute("/_authenticated/students")({
 function StudentsPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/students" });
+  const router = useRouter();
   const { data: students } = useSuspenseQuery(studentsQueryOptions());
 
   const classOptions = useMemo(() => {
@@ -164,7 +165,13 @@ function StudentsPage() {
             </TableHeader>
             <TableBody>
               {filtered.map((s) => (
-                <StudentRow key={s.id} student={s} onOpen={(id) => navigate({ to: "/students/$studentId", params: { studentId: id } })} />
+                <StudentRow
+                  key={s.id}
+                  student={s}
+                  onOpen={(id) =>
+                    router.navigate({ to: "/students/$studentId", params: { studentId: id } })
+                  }
+                />
               ))}
               {filtered.length === 0 && (
                 <TableRow>
@@ -213,9 +220,14 @@ function StudentRow({ student, onOpen }: { student: StudentRow; onOpen: (id: str
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <div className="truncate font-medium text-foreground group-hover:text-primary">
+            <Link
+              to="/students/$studentId"
+              params={{ studentId: student.id }}
+              onClick={(e) => e.stopPropagation()}
+              className="truncate font-medium text-foreground hover:text-primary hover:underline"
+            >
               {student.last_name} {student.first_name}
-            </div>
+            </Link>
             <div className="text-xs text-muted-foreground">
               {student.gender === "male" ? "Male" : student.gender === "female" ? "Female" : "—"} · Born{" "}
               {student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : "—"}
