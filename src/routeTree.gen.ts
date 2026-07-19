@@ -28,6 +28,7 @@ import { Route as AuthenticatedBoardingRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated.attendance'
 import { Route as AuthenticatedAdmissionsRouteImport } from './routes/_authenticated.admissions'
 import { Route as AuthenticatedAcceptInviteRouteImport } from './routes/_authenticated.accept-invite'
+import { Route as AuthenticatedStudentsIndexRouteImport } from './routes/_authenticated.students.index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated.settings.index'
 import { Route as AuthenticatedStudentsNewRouteImport } from './routes/_authenticated.students_.new'
 import { Route as AuthenticatedStudentsStudentIdRouteImport } from './routes/_authenticated.students.$studentId'
@@ -137,6 +138,12 @@ const AuthenticatedAcceptInviteRoute =
     id: '/accept-invite',
     path: '/accept-invite',
     getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedStudentsIndexRoute =
+  AuthenticatedStudentsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedStudentsRoute,
   } as any)
 const AuthenticatedSettingsIndexRoute =
   AuthenticatedSettingsIndexRouteImport.update({
@@ -252,6 +259,7 @@ export interface FileRoutesByFullPath {
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
   '/students/new': typeof AuthenticatedStudentsNewRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/students/': typeof AuthenticatedStudentsIndexRoute
   '/finance/receipt/$paymentId': typeof AuthenticatedFinanceReceiptPaymentIdRoute
   '/payroll/payslip/$payslipId': typeof AuthenticatedPayrollPayslipPayslipIdRoute
   '/reports/bulletin/$studentId/$sequence': typeof AuthenticatedReportsBulletinStudentIdSequenceRoute
@@ -270,7 +278,6 @@ export interface FileRoutesByTo {
   '/messages': typeof AuthenticatedMessagesRoute
   '/payroll': typeof AuthenticatedPayrollRouteWithChildren
   '/reports': typeof AuthenticatedReportsRouteWithChildren
-  '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/timetable': typeof AuthenticatedTimetableRoute
   '/transport': typeof AuthenticatedTransportRoute
   '/wallet': typeof AuthenticatedWalletRoute
@@ -286,6 +293,7 @@ export interface FileRoutesByTo {
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
   '/students/new': typeof AuthenticatedStudentsNewRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
+  '/students': typeof AuthenticatedStudentsIndexRoute
   '/finance/receipt/$paymentId': typeof AuthenticatedFinanceReceiptPaymentIdRoute
   '/payroll/payslip/$payslipId': typeof AuthenticatedPayrollPayslipPayslipIdRoute
   '/reports/bulletin/$studentId/$sequence': typeof AuthenticatedReportsBulletinStudentIdSequenceRoute
@@ -322,6 +330,7 @@ export interface FileRoutesById {
   '/_authenticated/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
   '/_authenticated/students_/new': typeof AuthenticatedStudentsNewRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/_authenticated/students/': typeof AuthenticatedStudentsIndexRoute
   '/_authenticated/finance/receipt/$paymentId': typeof AuthenticatedFinanceReceiptPaymentIdRoute
   '/_authenticated/payroll/payslip/$payslipId': typeof AuthenticatedPayrollPayslipPayslipIdRoute
   '/_authenticated/reports/bulletin/$studentId/$sequence': typeof AuthenticatedReportsBulletinStudentIdSequenceRoute
@@ -358,6 +367,7 @@ export interface FileRouteTypes {
     | '/students/$studentId'
     | '/students/new'
     | '/settings/'
+    | '/students/'
     | '/finance/receipt/$paymentId'
     | '/payroll/payslip/$payslipId'
     | '/reports/bulletin/$studentId/$sequence'
@@ -376,7 +386,6 @@ export interface FileRouteTypes {
     | '/messages'
     | '/payroll'
     | '/reports'
-    | '/students'
     | '/timetable'
     | '/transport'
     | '/wallet'
@@ -392,6 +401,7 @@ export interface FileRouteTypes {
     | '/students/$studentId'
     | '/students/new'
     | '/settings'
+    | '/students'
     | '/finance/receipt/$paymentId'
     | '/payroll/payslip/$payslipId'
     | '/reports/bulletin/$studentId/$sequence'
@@ -427,6 +437,7 @@ export interface FileRouteTypes {
     | '/_authenticated/students/$studentId'
     | '/_authenticated/students_/new'
     | '/_authenticated/settings/'
+    | '/_authenticated/students/'
     | '/_authenticated/finance/receipt/$paymentId'
     | '/_authenticated/payroll/payslip/$payslipId'
     | '/_authenticated/reports/bulletin/$studentId/$sequence'
@@ -572,6 +583,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/accept-invite'
       preLoaderRoute: typeof AuthenticatedAcceptInviteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/students/': {
+      id: '/_authenticated/students/'
+      path: '/'
+      fullPath: '/students/'
+      preLoaderRoute: typeof AuthenticatedStudentsIndexRouteImport
+      parentRoute: typeof AuthenticatedStudentsRoute
     }
     '/_authenticated/settings/': {
       id: '/_authenticated/settings/'
@@ -755,10 +773,12 @@ const AuthenticatedReportsRouteWithChildren =
 
 interface AuthenticatedStudentsRouteChildren {
   AuthenticatedStudentsStudentIdRoute: typeof AuthenticatedStudentsStudentIdRoute
+  AuthenticatedStudentsIndexRoute: typeof AuthenticatedStudentsIndexRoute
 }
 
 const AuthenticatedStudentsRouteChildren: AuthenticatedStudentsRouteChildren = {
   AuthenticatedStudentsStudentIdRoute: AuthenticatedStudentsStudentIdRoute,
+  AuthenticatedStudentsIndexRoute: AuthenticatedStudentsIndexRoute,
 }
 
 const AuthenticatedStudentsRouteWithChildren =
