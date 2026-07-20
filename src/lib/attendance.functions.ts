@@ -70,23 +70,8 @@ export const markAttendance = createServerFn({ method: "POST" })
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) throw new Error("No school assigned");
     const subject = data.subject ?? null;
-    // Manual upsert to handle nullable subject in the composite uniqueness
-    const existing = await supabase
-      .from("attendance")
-      .select("id")
-      .eq("school_id", schoolId)
-      .eq("student_id", data.studentId)
-      .eq("date", data.date)
-      .is(subject ? "subject" : "subject", subject as never)
-      .maybeSingle();
-    let q;
-    if (subject) {
-      q = supabase.from("attendance").select("id").eq("school_id", schoolId).eq("student_id", data.studentId).eq("date", data.date).eq("subject", subject).maybeSingle();
-    } else {
-      q = supabase.from("attendance").select("id").eq("school_id", schoolId).eq("student_id", data.studentId).eq("date", data.date).is("subject", null).maybeSingle();
-    }
-    const { data: found } = await q;
-    void existing;
+    const base = supabase.from("attendance").select("id").eq("school_id", schoolId).eq("student_id", data.studentId).eq("date", data.date);
+    const { data: found } = await (subject ? base.eq("subject", subject) : base.is("subject", null)).maybeSingle();
     if (found?.id) {
       const { error } = await supabase
         .from("attendance")
