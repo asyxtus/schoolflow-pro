@@ -6,7 +6,7 @@ export type AttendanceStatus = "present" | "absent" | "late" | "excused";
 
 export const getAttendanceForClass = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { className: string; date: string }) => data)
+  .inputValidator((data: { className: string; date: string; subject?: string | null }) => data)
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const schoolId = await getUserSchoolId(supabase, userId);
@@ -22,14 +22,21 @@ export const getAttendanceForClass = createServerFn({ method: "GET" })
     if (sErr) throw new Error(sErr.message);
 
     const ids = (students ?? []).map((s) => s.id);
-    const { data: att } = ids.length
-      ? await supabase
+    let attQuery = ids.length
+      ? supabase
           .from("attendance")
-          .select("student_id, status, note")
+          .select("student_id, status, note, subject")
           .eq("school_id", schoolId)
           .eq("date", data.date)
           .in("student_id", ids)
-      : { data: [] as { student_id: string; status: AttendanceStatus; note: string | null }[] };
+      : null;
+    if (attQuery) {
+      if (data.subject) attQuery = attQuery.eq("subject", data.subject);
+      else attQuery = attQuery.is("subject", null);
+    }
+    const { data: att } = attQuery
+      ? await attQuery
+      : { data: [] as { student_id: string; status: AttendanceStatus; note: string | null; subject: string | null }[] };
 
     const byId = new Map(att?.map((a) => [a.student_id, a]));
     return (students ?? []).map((s) => ({
@@ -57,46 +64,82 @@ export const listClassNames = createServerFn({ method: "GET" })
 
 export const markAttendance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { studentId: string; date: string; status: AttendanceStatus; note?: string }) => data)
+  .inputValidator((data: { studentId: string; date: string; status: AttendanceStatus; note?: string; subject?: string | null }) => data)
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) throw new Error("No school assigned");
-    const { error } = await supabase
-      .from("attendance")
-      .upsert(
-        {
-          school_id: schoolId,
-          student_id: data.studentId,
-          date: data.date,
-          status: data.status,
-          note: data.note ?? null,
-          recorded_by: userId,
-        },
-        { onConflict: "student_id,date" },
-      );
-    if (error) throw new Error(error.message);
+    const subject = data.subject ?? null;
+    const base = supabase.from("attendance").select("id").eq("school_id", schoolId).eq("student_id", data.studentId).eq("date", data.date);
+    const { data: found } = await (subject ? base.eq("subject", subject) : base.is("subject", null)).maybeSingle();
+    if (found?.id) {
+      const { error } = await supabase
+        .from("attendance")
+        .update({ status: data.status, note: data.note ?? null, recorded_by: userId })
+        .eq("id", found.id);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabase.from("attendance").insert({
+        school_id: schoolId,
+        student_id: data.studentId,
+        date: data.date,
+        subject,
+        status: data.status,
+        note: data.note ?? null,
+        recorded_by: userId,
+      });
+      if (error) throw new Error(error.message);
+    }
     return { ok: true };
   });
 
 export const bulkMarkAttendance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { date: string; entries: { studentId: string; status: AttendanceStatus }[] }) => data)
+  .inputValidator((data: { date: string; subject?: string | null; entries: { studentId: string; status: AttendanceStatus }[] }) => data)
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) throw new Error("No school assigned");
-    const rows = data.entries.map((e) => ({
-      school_id: schoolId,
-      student_id: e.studentId,
-      date: data.date,
-      status: e.status,
-      recorded_by: userId,
-    }));
-    if (!rows.length) return { ok: true, count: 0 };
-    const { error } = await supabase
+    const subject = data.subject ?? null;
+    if (!data.entries.length) return { ok: true, count: 0 };
+    // Fetch existing rows for this date+subject
+    const ids = data.entries.map((e) => e.studentId);
+    let existQ = supabase
       .from("attendance")
-      .upsert(rows, { onConflict: "student_id,date" });
-    if (error) throw new Error(error.message);
-    return { ok: true, count: rows.length };
+      .select("id, student_id")
+      .eq("school_id", schoolId)
+      .eq("date", data.date)
+      .in("student_id", ids);
+    existQ = subject ? existQ.eq("subject", subject) : existQ.is("subject", null);
+    const { data: existing } = await existQ;
+    const byStudent = new Map((existing ?? []).map((r) => [r.student_id, r.id]));
+    type AttInsert = {
+      school_id: string;
+      student_id: string;
+      date: string;
+      subject: string | null;
+      status: AttendanceStatus;
+      recorded_by: string;
+    };
+    const toInsert: AttInsert[] = [];
+    for (const e of data.entries) {
+      const rid = byStudent.get(e.studentId);
+      if (rid) {
+        await supabase.from("attendance").update({ status: e.status, recorded_by: userId }).eq("id", rid);
+      } else {
+        toInsert.push({
+          school_id: schoolId,
+          student_id: e.studentId,
+          date: data.date,
+          subject,
+          status: e.status,
+          recorded_by: userId,
+        });
+      }
+    }
+    if (toInsert.length) {
+      const { error } = await supabase.from("attendance").insert(toInsert);
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true, count: data.entries.length };
   });

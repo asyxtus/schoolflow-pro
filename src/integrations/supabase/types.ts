@@ -98,6 +98,7 @@ export type Database = {
           school_id: string
           status: Database["public"]["Enums"]["attendance_status"]
           student_id: string
+          subject: string | null
           updated_at: string
         }
         Insert: {
@@ -109,6 +110,7 @@ export type Database = {
           school_id: string
           status?: Database["public"]["Enums"]["attendance_status"]
           student_id: string
+          subject?: string | null
           updated_at?: string
         }
         Update: {
@@ -120,6 +122,7 @@ export type Database = {
           school_id?: string
           status?: Database["public"]["Enums"]["attendance_status"]
           student_id?: string
+          subject?: string | null
           updated_at?: string
         }
         Relationships: [
