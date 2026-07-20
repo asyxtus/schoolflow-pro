@@ -80,6 +80,9 @@ function ReportsPage() {
             <Button size="sm" variant="outline" asChild>
               <Link to="/reports/coefficients"><Sliders className="mr-2 h-4 w-4" />Coefficients</Link>
             </Button>
+            <Button size="sm" variant="outline" asChild>
+              <Link to="/reports/finance">Financial reports</Link>
+            </Button>
             <Button size="sm" variant="outline" onClick={() => window.print()}>
               <Printer className="mr-2 h-4 w-4" />Print
             </Button>
