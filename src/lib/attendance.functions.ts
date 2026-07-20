@@ -128,7 +128,15 @@ export const bulkMarkAttendance = createServerFn({ method: "POST" })
     existQ = subject ? existQ.eq("subject", subject) : existQ.is("subject", null);
     const { data: existing } = await existQ;
     const byStudent = new Map((existing ?? []).map((r) => [r.student_id, r.id]));
-    const toInsert: Array<Record<string, unknown>> = [];
+    type AttInsert = {
+      school_id: string;
+      student_id: string;
+      date: string;
+      subject: string | null;
+      status: AttendanceStatus;
+      recorded_by: string;
+    };
+    const toInsert: AttInsert[] = [];
     for (const e of data.entries) {
       const rid = byStudent.get(e.studentId);
       if (rid) {
