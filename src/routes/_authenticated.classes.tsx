@@ -32,9 +32,14 @@ function ClassesPage() {
         title="Classes"
         description={`${classes.length} class${classes.length === 1 ? "" : "es"} · ${totalStudents} learner${totalStudents === 1 ? "" : "s"}`}
         actions={
-          <Button asChild size="sm">
-            <Link to="/students/new">Add student</Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild size="sm" variant="outline">
+              <Link to="/classes/manage">Manage classes & subjects</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link to="/students/new">Add student</Link>
+            </Button>
+          </div>
         }
       />
 
