@@ -13,7 +13,7 @@ const classesQuery = queryOptions({
   queryFn: () => getClasses(),
 });
 
-export const Route = createFileRoute("/_authenticated/classes")({
+export const Route = createFileRoute("/_authenticated/classes/")({
   loader: ({ context }) => context.queryClient.ensureQueryData(classesQuery),
   component: ClassesPage,
 });
