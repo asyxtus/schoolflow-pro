@@ -23,6 +23,7 @@ import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedLibraryRouteImport } from './routes/_authenticated.library'
 import { Route as AuthenticatedHrRouteImport } from './routes/_authenticated.hr'
 import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated.finance'
+import { Route as AuthenticatedClassesRouteImport } from './routes/_authenticated.classes'
 import { Route as AuthenticatedBoardingRouteImport } from './routes/_authenticated.boarding'
 import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated.attendance'
 import { Route as AuthenticatedAdmissionsRouteImport } from './routes/_authenticated.admissions'
@@ -113,6 +114,11 @@ const AuthenticatedFinanceRoute = AuthenticatedFinanceRouteImport.update({
   path: '/finance',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedClassesRoute = AuthenticatedClassesRouteImport.update({
+  id: '/classes',
+  path: '/classes',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedBoardingRoute = AuthenticatedBoardingRouteImport.update({
   id: '/boarding',
   path: '/boarding',
@@ -148,9 +154,9 @@ const AuthenticatedSettingsIndexRoute =
   } as any)
 const AuthenticatedClassesIndexRoute =
   AuthenticatedClassesIndexRouteImport.update({
-    id: '/classes/',
-    path: '/classes/',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedClassesRoute,
   } as any)
 const AuthenticatedStudentsNewRoute =
   AuthenticatedStudentsNewRouteImport.update({
@@ -201,9 +207,9 @@ const AuthenticatedHrStaffIdRoute = AuthenticatedHrStaffIdRouteImport.update({
 } as any)
 const AuthenticatedClassesManageRoute =
   AuthenticatedClassesManageRouteImport.update({
-    id: '/classes/manage',
-    path: '/classes/manage',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/manage',
+    path: '/manage',
+    getParentRoute: () => AuthenticatedClassesRoute,
   } as any)
 const AuthenticatedAdmissionsNewRoute =
   AuthenticatedAdmissionsNewRouteImport.update({
@@ -238,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/admissions': typeof AuthenticatedAdmissionsRouteWithChildren
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/boarding': typeof AuthenticatedBoardingRoute
+  '/classes': typeof AuthenticatedClassesRouteWithChildren
   '/finance': typeof AuthenticatedFinanceRouteWithChildren
   '/hr': typeof AuthenticatedHrRouteWithChildren
   '/library': typeof AuthenticatedLibraryRoute
@@ -308,6 +315,7 @@ export interface FileRoutesById {
   '/_authenticated/admissions': typeof AuthenticatedAdmissionsRouteWithChildren
   '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
   '/_authenticated/boarding': typeof AuthenticatedBoardingRoute
+  '/_authenticated/classes': typeof AuthenticatedClassesRouteWithChildren
   '/_authenticated/finance': typeof AuthenticatedFinanceRouteWithChildren
   '/_authenticated/hr': typeof AuthenticatedHrRouteWithChildren
   '/_authenticated/library': typeof AuthenticatedLibraryRoute
@@ -346,6 +354,7 @@ export interface FileRouteTypes {
     | '/admissions'
     | '/attendance'
     | '/boarding'
+    | '/classes'
     | '/finance'
     | '/hr'
     | '/library'
@@ -415,6 +424,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admissions'
     | '/_authenticated/attendance'
     | '/_authenticated/boarding'
+    | '/_authenticated/classes'
     | '/_authenticated/finance'
     | '/_authenticated/hr'
     | '/_authenticated/library'
@@ -550,6 +560,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinanceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/classes': {
+      id: '/_authenticated/classes'
+      path: '/classes'
+      fullPath: '/classes'
+      preLoaderRoute: typeof AuthenticatedClassesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/boarding': {
       id: '/_authenticated/boarding'
       path: '/boarding'
@@ -594,10 +611,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/classes/': {
       id: '/_authenticated/classes/'
-      path: '/classes'
+      path: '/'
       fullPath: '/classes/'
       preLoaderRoute: typeof AuthenticatedClassesIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedClassesRoute
     }
     '/_authenticated/students_/new': {
       id: '/_authenticated/students_/new'
@@ -657,10 +674,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/classes/manage': {
       id: '/_authenticated/classes/manage'
-      path: '/classes/manage'
+      path: '/manage'
       fullPath: '/classes/manage'
       preLoaderRoute: typeof AuthenticatedClassesManageRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedClassesRoute
     }
     '/_authenticated/admissions/new': {
       id: '/_authenticated/admissions/new'
@@ -706,6 +723,19 @@ const AuthenticatedAdmissionsRouteWithChildren =
   AuthenticatedAdmissionsRoute._addFileChildren(
     AuthenticatedAdmissionsRouteChildren,
   )
+
+interface AuthenticatedClassesRouteChildren {
+  AuthenticatedClassesManageRoute: typeof AuthenticatedClassesManageRoute
+  AuthenticatedClassesIndexRoute: typeof AuthenticatedClassesIndexRoute
+}
+
+const AuthenticatedClassesRouteChildren: AuthenticatedClassesRouteChildren = {
+  AuthenticatedClassesManageRoute: AuthenticatedClassesManageRoute,
+  AuthenticatedClassesIndexRoute: AuthenticatedClassesIndexRoute,
+}
+
+const AuthenticatedClassesRouteWithChildren =
+  AuthenticatedClassesRoute._addFileChildren(AuthenticatedClassesRouteChildren)
 
 interface AuthenticatedFinanceRouteChildren {
   AuthenticatedFinanceReceiptPaymentIdRoute: typeof AuthenticatedFinanceReceiptPaymentIdRoute
@@ -781,6 +811,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdmissionsRoute: typeof AuthenticatedAdmissionsRouteWithChildren
   AuthenticatedAttendanceRoute: typeof AuthenticatedAttendanceRoute
   AuthenticatedBoardingRoute: typeof AuthenticatedBoardingRoute
+  AuthenticatedClassesRoute: typeof AuthenticatedClassesRouteWithChildren
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRouteWithChildren
   AuthenticatedHrRoute: typeof AuthenticatedHrRouteWithChildren
   AuthenticatedLibraryRoute: typeof AuthenticatedLibraryRoute
@@ -792,11 +823,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTransportRoute: typeof AuthenticatedTransportRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
-  AuthenticatedClassesManageRoute: typeof AuthenticatedClassesManageRoute
   AuthenticatedSettingsAuditRoute: typeof AuthenticatedSettingsAuditRoute
   AuthenticatedSettingsUsersRoute: typeof AuthenticatedSettingsUsersRoute
   AuthenticatedStudentsNewRoute: typeof AuthenticatedStudentsNewRoute
-  AuthenticatedClassesIndexRoute: typeof AuthenticatedClassesIndexRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
 
@@ -805,6 +834,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdmissionsRoute: AuthenticatedAdmissionsRouteWithChildren,
   AuthenticatedAttendanceRoute: AuthenticatedAttendanceRoute,
   AuthenticatedBoardingRoute: AuthenticatedBoardingRoute,
+  AuthenticatedClassesRoute: AuthenticatedClassesRouteWithChildren,
   AuthenticatedFinanceRoute: AuthenticatedFinanceRouteWithChildren,
   AuthenticatedHrRoute: AuthenticatedHrRouteWithChildren,
   AuthenticatedLibraryRoute: AuthenticatedLibraryRoute,
@@ -816,11 +846,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTransportRoute: AuthenticatedTransportRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
-  AuthenticatedClassesManageRoute: AuthenticatedClassesManageRoute,
   AuthenticatedSettingsAuditRoute: AuthenticatedSettingsAuditRoute,
   AuthenticatedSettingsUsersRoute: AuthenticatedSettingsUsersRoute,
   AuthenticatedStudentsNewRoute: AuthenticatedStudentsNewRoute,
-  AuthenticatedClassesIndexRoute: AuthenticatedClassesIndexRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
 }
 
