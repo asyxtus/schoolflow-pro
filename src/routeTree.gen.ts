@@ -30,6 +30,7 @@ import { Route as AuthenticatedAdmissionsRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAcceptInviteRouteImport } from './routes/_authenticated.accept-invite'
 import { Route as AuthenticatedStudentsIndexRouteImport } from './routes/_authenticated.students.index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated.settings.index'
+import { Route as AuthenticatedClassesIndexRouteImport } from './routes/_authenticated.classes.index'
 import { Route as AuthenticatedStudentsNewRouteImport } from './routes/_authenticated.students_.new'
 import { Route as AuthenticatedStudentsStudentIdRouteImport } from './routes/_authenticated.students.$studentId'
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated.settings.users'
@@ -151,6 +152,12 @@ const AuthenticatedSettingsIndexRoute =
     path: '/settings/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedClassesIndexRoute =
+  AuthenticatedClassesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedClassesRoute,
+  } as any)
 const AuthenticatedStudentsNewRoute =
   AuthenticatedStudentsNewRouteImport.update({
     id: '/students_/new',
@@ -258,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
   '/students/new': typeof AuthenticatedStudentsNewRoute
+  '/classes/': typeof AuthenticatedClassesIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/students/': typeof AuthenticatedStudentsIndexRoute
   '/finance/receipt/$paymentId': typeof AuthenticatedFinanceReceiptPaymentIdRoute
@@ -271,7 +279,6 @@ export interface FileRoutesByTo {
   '/admissions': typeof AuthenticatedAdmissionsRouteWithChildren
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/boarding': typeof AuthenticatedBoardingRoute
-  '/classes': typeof AuthenticatedClassesRouteWithChildren
   '/finance': typeof AuthenticatedFinanceRouteWithChildren
   '/hr': typeof AuthenticatedHrRouteWithChildren
   '/library': typeof AuthenticatedLibraryRoute
@@ -292,6 +299,7 @@ export interface FileRoutesByTo {
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
   '/students/new': typeof AuthenticatedStudentsNewRoute
+  '/classes': typeof AuthenticatedClassesIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/students': typeof AuthenticatedStudentsIndexRoute
   '/finance/receipt/$paymentId': typeof AuthenticatedFinanceReceiptPaymentIdRoute
@@ -329,6 +337,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/_authenticated/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
   '/_authenticated/students_/new': typeof AuthenticatedStudentsNewRoute
+  '/_authenticated/classes/': typeof AuthenticatedClassesIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/students/': typeof AuthenticatedStudentsIndexRoute
   '/_authenticated/finance/receipt/$paymentId': typeof AuthenticatedFinanceReceiptPaymentIdRoute
@@ -366,6 +375,7 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/students/$studentId'
     | '/students/new'
+    | '/classes/'
     | '/settings/'
     | '/students/'
     | '/finance/receipt/$paymentId'
@@ -379,7 +389,6 @@ export interface FileRouteTypes {
     | '/admissions'
     | '/attendance'
     | '/boarding'
-    | '/classes'
     | '/finance'
     | '/hr'
     | '/library'
@@ -400,6 +409,7 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/students/$studentId'
     | '/students/new'
+    | '/classes'
     | '/settings'
     | '/students'
     | '/finance/receipt/$paymentId'
@@ -436,6 +446,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/users'
     | '/_authenticated/students/$studentId'
     | '/_authenticated/students_/new'
+    | '/_authenticated/classes/'
     | '/_authenticated/settings/'
     | '/_authenticated/students/'
     | '/_authenticated/finance/receipt/$paymentId'
@@ -598,6 +609,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/classes/': {
+      id: '/_authenticated/classes/'
+      path: '/'
+      fullPath: '/classes/'
+      preLoaderRoute: typeof AuthenticatedClassesIndexRouteImport
+      parentRoute: typeof AuthenticatedClassesRoute
+    }
     '/_authenticated/students_/new': {
       id: '/_authenticated/students_/new'
       path: '/students/new'
@@ -708,10 +726,12 @@ const AuthenticatedAdmissionsRouteWithChildren =
 
 interface AuthenticatedClassesRouteChildren {
   AuthenticatedClassesManageRoute: typeof AuthenticatedClassesManageRoute
+  AuthenticatedClassesIndexRoute: typeof AuthenticatedClassesIndexRoute
 }
 
 const AuthenticatedClassesRouteChildren: AuthenticatedClassesRouteChildren = {
   AuthenticatedClassesManageRoute: AuthenticatedClassesManageRoute,
+  AuthenticatedClassesIndexRoute: AuthenticatedClassesIndexRoute,
 }
 
 const AuthenticatedClassesRouteWithChildren =
