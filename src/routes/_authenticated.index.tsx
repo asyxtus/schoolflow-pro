@@ -8,6 +8,11 @@ import {
   ClipboardList,
   ArrowRight,
   Circle,
+  AlertTriangle,
+  Bell,
+  TrendingUp,
+  Clock,
+  Wallet,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
@@ -28,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/")({
       {
         name: "description",
         content:
-          "Enrolment, attendance, fee collection and admissions at a glance for your school.",
+          "Live pulse of enrolment, attendance, collections and alerts for your school.",
       },
     ],
   }),
@@ -44,13 +49,19 @@ function DashboardPage() {
   const { data: stats } = useSuspenseQuery({
     queryKey: ["dashboard-stats"],
     queryFn: () => fetchStats(),
+    refetchInterval: 60_000,
   });
   const school = data?.school;
   const profile = data?.profile;
   const displayName = profile?.full_name || profile?.email?.split("@")[0] || "there";
   const locale = [school?.city, school?.region].filter(Boolean).join(" · ");
-  const subtitle = [school?.name, locale].filter(Boolean).join(" · ") ||
+  const subtitle =
+    [school?.name, locale].filter(Boolean).join(" · ") ||
     "Set up your school in Settings";
+
+  const t = stats.today;
+  const aging = stats.aging;
+  const totalOverdue = aging.d0_7 + aging.d8_30 + aging.d31_60 + aging.d60p;
 
   return (
     <div className="mx-auto w-full max-w-7xl px-6 py-8">
@@ -59,15 +70,94 @@ function DashboardPage() {
         description={subtitle}
         actions={
           <>
-            <Button variant="outline" size="sm">
-              Export
-            </Button>
+            <Button variant="outline" size="sm">Export</Button>
             <Button size="sm" asChild>
               <Link to="/admissions/new">New admission</Link>
             </Button>
           </>
         }
       />
+
+      {stats.alerts.length > 0 && (
+        <Card className="mb-6 border-l-4 border-l-amber-500">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Bell className="h-4 w-4" /> Needs your attention
+              <Badge variant="secondary" className="ml-1">{stats.alerts.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2 sm:grid-cols-2">
+            {stats.alerts.map((a) => (
+              <Link
+                key={a.id}
+                to={a.href ?? "/"}
+                className="flex items-start gap-2 rounded-md border border-border p-2.5 hover:bg-accent transition"
+              >
+                <AlertTriangle
+                  className={`h-4 w-4 mt-0.5 shrink-0 ${
+                    a.kind === "danger"
+                      ? "text-destructive"
+                      : a.kind === "warn"
+                      ? "text-amber-600"
+                      : "text-muted-foreground"
+                  }`}
+                />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{a.title}</p>
+                  <p className="text-xs text-muted-foreground truncate">{a.detail}</p>
+                </div>
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="mb-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Clock className="h-4 w-4" /> Today at a glance
+            <span className="text-xs font-normal text-muted-foreground ml-auto">
+              Live · auto-refresh
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div>
+            <p className="text-xs text-muted-foreground">Collected today</p>
+            <p className="text-lg font-semibold tabular-nums">{formatFCFA(t.collectedToday)}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {t.paymentsCountToday} payment{t.paymentsCountToday === 1 ? "" : "s"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Attendance taken</p>
+            <p className="text-lg font-semibold tabular-nums">{t.attendanceCoverage}%</p>
+            <p className="text-[11px] text-muted-foreground">
+              {t.presentToday}P · {t.absentToday}A · {t.lateToday}L
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Boarders on exeat</p>
+            <p className="text-lg font-semibold tabular-nums">{t.exeatsOut}</p>
+            <p
+              className={`text-[11px] ${
+                t.exeatsOverdue > 0
+                  ? "text-destructive font-medium"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {t.exeatsOverdue} overdue return{t.exeatsOverdue === 1 ? "" : "s"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Open admissions</p>
+            <p className="text-lg font-semibold tabular-nums">{stats.openApplicants}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {stats.pipeline.find((p) => p.stage === "interview")?.count ?? 0} awaiting interview
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
@@ -107,33 +197,41 @@ function DashboardPage() {
             <div>
               <CardTitle className="text-base">Fee collection by class</CardTitle>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Term 2 progress · updated 2 min ago
+                Live · billed vs collected
               </p>
             </div>
-            <Button variant="ghost" size="sm" className="text-xs">
-              View report <ArrowRight className="ml-1 h-3 w-3" />
+            <Button variant="ghost" size="sm" className="text-xs" asChild>
+              <Link to="/reports/finance">
+                View report <ArrowRight className="ml-1 h-3 w-3" />
+              </Link>
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            {feeRows.map((r) => (
-              <div key={r.class} className="space-y-1.5">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-foreground">{r.class}</span>
-                  <span className="tabular-nums text-muted-foreground">
-                    XAF {r.collected.toLocaleString()} ·{" "}
-                    <span className="font-medium text-foreground">{r.pct}%</span>
-                  </span>
+            {stats.feeByClass.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                No fees invoiced yet. Set up fee structures in Finance.
+              </p>
+            ) : (
+              stats.feeByClass.map((r) => (
+                <div key={r.class_name} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-foreground">{r.class_name}</span>
+                    <span className="tabular-nums text-muted-foreground">
+                      {formatFCFA(r.collected)} of {formatFCFA(r.billed)} ·{" "}
+                      <span className="font-medium text-foreground">{r.pct}%</span>
+                    </span>
+                  </div>
+                  <Progress value={r.pct} className="h-1.5" />
                 </div>
-                <Progress value={r.pct} className="h-1.5" />
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Admissions pipeline</CardTitle>
-            <p className="text-xs text-muted-foreground">This week</p>
+            <p className="text-xs text-muted-foreground">Live totals</p>
           </CardHeader>
           <CardContent className="space-y-3">
             {pipelineLabels.map((p) => (
@@ -154,57 +252,117 @@ function DashboardPage() {
         </Card>
       </div>
 
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" /> Fees aging
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              {aging.count} overdue · {formatFCFA(totalOverdue)}
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <AgingRow label="0–7 days" amount={aging.d0_7} tone="text-amber-600" />
+            <AgingRow label="8–30 days" amount={aging.d8_30} tone="text-orange-600" />
+            <AgingRow label="31–60 days" amount={aging.d31_60} tone="text-red-600" />
+            <AgingRow label="60+ days" amount={aging.d60p} tone="text-destructive font-semibold" />
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Wallet className="h-4 w-4" /> Recent payments
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">Last {stats.recent.length}</p>
+            </div>
+            <Button variant="ghost" size="sm" className="text-xs" asChild>
+              <Link to="/finance">
+                Open finance <ArrowRight className="ml-1 h-3 w-3" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="divide-y divide-border">
+            {stats.recent.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                No payments yet.
+              </p>
+            ) : (
+              stats.recent.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between py-2 text-sm gap-3"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{p.student_name || "—"}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {p.class_name} · {p.receipt_no ?? "—"} · {p.method}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="tabular-nums font-medium">{formatFCFA(p.amount_fcfa)}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {new Date(p.paid_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Attendance flags</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Students with 3+ consecutive absences
-            </p>
+            <CardTitle className="text-base">Upcoming fee deadlines</CardTitle>
+            <p className="text-xs text-muted-foreground">Next 14 days</p>
           </CardHeader>
           <CardContent className="divide-y divide-border">
-            {absences.map((a) => (
-              <div
-                key={a.name}
-                className="flex items-center justify-between py-2.5 text-sm"
-              >
-                <div>
-                  <p className="font-medium text-foreground">{a.name}</p>
-                  <p className="text-xs text-muted-foreground">{a.class}</p>
+            {stats.upcoming.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                No upcoming deadlines.
+              </p>
+            ) : (
+              stats.upcoming.slice(0, 6).map((u) => (
+                <div
+                  key={u.id}
+                  className="flex items-center justify-between py-2.5 text-sm gap-3"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{u.label}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {u.student_name} · {u.class_name}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="tabular-nums text-foreground">
+                      {formatFCFA(u.amount_fcfa)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Due {new Date(u.due_date).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="tabular-nums text-foreground">{a.days} days</p>
-                  <p className="text-xs text-muted-foreground">{a.last}</p>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Calendar</CardTitle>
-            <p className="text-xs text-muted-foreground">Next 7 days</p>
+            <CardTitle className="text-base">Quick actions</CardTitle>
+            <p className="text-xs text-muted-foreground">Jump into common tasks</p>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {calendar.map((c) => (
-              <div key={c.title} className="flex gap-3">
-                <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-md border border-border bg-secondary text-center">
-                  <span className="text-[10px] font-medium uppercase text-muted-foreground">
-                    {c.month}
-                  </span>
-                  <span className="text-sm font-semibold leading-none text-foreground">
-                    {c.day}
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {c.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{c.detail}</p>
-                </div>
-              </div>
-            ))}
+          <CardContent className="grid grid-cols-2 gap-2">
+            <QuickLink to="/attendance" label="Take attendance" />
+            <QuickLink to="/finance" label="Record payment" />
+            <QuickLink to="/students_/new" label="Add student" />
+            <QuickLink to="/messages" label="Send message" />
+            <QuickLink to="/reports/finance" label="Finance report" />
+            <QuickLink to="/settings/audit" label="Audit log" />
           </CardContent>
         </Card>
       </div>
@@ -212,13 +370,22 @@ function DashboardPage() {
   );
 }
 
-const feeRows = [
-  { class: "Form 1A", collected: 4_200_000, pct: 92 },
-  { class: "Form 2B", collected: 3_850_000, pct: 84 },
-  { class: "Form 3A", collected: 3_100_000, pct: 71 },
-  { class: "Form 4C", collected: 2_700_000, pct: 63 },
-  { class: "Upper 6 Sci.", collected: 2_100_000, pct: 48 },
-];
+function AgingRow({ label, amount, tone }: { label: string; amount: number; tone: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={`tabular-nums ${tone}`}>{formatFCFA(amount)}</span>
+    </div>
+  );
+}
+
+function QuickLink({ to, label }: { to: string; label: string }) {
+  return (
+    <Button variant="outline" size="sm" className="justify-start" asChild>
+      <Link to={to}>{label}</Link>
+    </Button>
+  );
+}
 
 const pipelineLabels = [
   { id: "new", label: "New applications", color: "text-chart-2" },
@@ -226,38 +393,4 @@ const pipelineLabels = [
   { id: "interview", label: "Interview scheduled", color: "text-chart-4" },
   { id: "offer", label: "Offer sent", color: "text-chart-3" },
   { id: "enrolled", label: "Enrolled", color: "text-primary" },
-];
-
-const absences = [
-  { name: "Ngwa Beltrand", class: "Form 3A", days: 5, last: "Mon, absent" },
-  { name: "Fon Adeline", class: "Form 2B", days: 4, last: "Mon, absent" },
-  { name: "Tabi Junior", class: "Form 1A", days: 3, last: "Tue, absent" },
-  { name: "Njoya Sandrine", class: "Upper 6 Arts", days: 3, last: "Tue, absent" },
-];
-
-const calendar = [
-  {
-    month: "Mar",
-    day: "12",
-    title: "Mid-term exams begin",
-    detail: "Forms 1–4 · Main hall",
-  },
-  {
-    month: "Mar",
-    day: "15",
-    title: "PTA general meeting",
-    detail: "3:00 pm · Auditorium",
-  },
-  {
-    month: "Mar",
-    day: "18",
-    title: "Fee deadline · Term 2",
-    detail: "Late fees apply after this date",
-  },
-  {
-    month: "Mar",
-    day: "20",
-    title: "Founder's Day mass",
-    detail: "8:00 am · Chapel",
-  },
 ];
