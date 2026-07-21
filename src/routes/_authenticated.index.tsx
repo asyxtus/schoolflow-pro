@@ -359,7 +359,7 @@ function DashboardPage() {
           <CardContent className="grid grid-cols-2 gap-2">
             <QuickLink to="/attendance" label="Take attendance" />
             <QuickLink to="/finance" label="Record payment" />
-            <QuickLink to="/students_/new" label="Add student" />
+            <QuickLink to="/students/new" label="Add student" />
             <QuickLink to="/messages" label="Send message" />
             <QuickLink to="/reports/finance" label="Finance report" />
             <QuickLink to="/settings/audit" label="Audit log" />
