@@ -119,7 +119,7 @@ function AgingPage() {
       <PageHeader
         title="Fees aging & reminders"
         description="Chase outstanding tuition. Send WhatsApp reminders to guardians in one tap."
-        action={
+        actions={
           <div className="flex gap-2">
             <Button asChild variant="outline" size="sm">
               <Link to="/finance"><ArrowLeft className="mr-1 h-4 w-4" />Finance</Link>
