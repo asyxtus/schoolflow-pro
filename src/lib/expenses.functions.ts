@@ -204,7 +204,7 @@ export const cashPosition = createServerFn({ method: "GET" })
     const collected = (pays.data ?? []).reduce((a, r) => a + (r.amount_fcfa ?? 0), 0);
     const expenses = (exps.data ?? []).reduce((a, r) => a + (r.amount_fcfa ?? 0), 0);
     const payroll = (runs.data ?? [])
-      .filter((r) => r.status === "paid" || r.status === "approved")
+      .filter((r) => r.status === "finalized")
       .reduce((a, r) => a + (r.total_net_fcfa ?? 0), 0);
     const pendingExpenses = (pending.data ?? []).reduce((a, r) => a + (r.amount_fcfa ?? 0), 0);
 
