@@ -23,6 +23,7 @@ import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedLibraryRouteImport } from './routes/_authenticated.library'
 import { Route as AuthenticatedHrRouteImport } from './routes/_authenticated.hr'
 import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated.finance'
+import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated.expenses'
 import { Route as AuthenticatedClassesRouteImport } from './routes/_authenticated.classes'
 import { Route as AuthenticatedBoardingRouteImport } from './routes/_authenticated.boarding'
 import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated.attendance'
@@ -39,6 +40,7 @@ import { Route as AuthenticatedReportsFinanceRouteImport } from './routes/_authe
 import { Route as AuthenticatedReportsCoefficientsRouteImport } from './routes/_authenticated.reports.coefficients'
 import { Route as AuthenticatedPayrollRunIdRouteImport } from './routes/_authenticated.payroll.$runId'
 import { Route as AuthenticatedHrStaffIdRouteImport } from './routes/_authenticated.hr.$staffId'
+import { Route as AuthenticatedFinanceAgingRouteImport } from './routes/_authenticated.finance.aging'
 import { Route as AuthenticatedClassesManageRouteImport } from './routes/_authenticated.classes.manage'
 import { Route as AuthenticatedAdmissionsNewRouteImport } from './routes/_authenticated.admissions.new'
 import { Route as AuthenticatedPayrollPayslipPayslipIdRouteImport } from './routes/_authenticated.payroll.payslip.$payslipId'
@@ -112,6 +114,11 @@ const AuthenticatedHrRoute = AuthenticatedHrRouteImport.update({
 const AuthenticatedFinanceRoute = AuthenticatedFinanceRouteImport.update({
   id: '/finance',
   path: '/finance',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
+  id: '/expenses',
+  path: '/expenses',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedClassesRoute = AuthenticatedClassesRouteImport.update({
@@ -205,6 +212,12 @@ const AuthenticatedHrStaffIdRoute = AuthenticatedHrStaffIdRouteImport.update({
   path: '/$staffId',
   getParentRoute: () => AuthenticatedHrRoute,
 } as any)
+const AuthenticatedFinanceAgingRoute =
+  AuthenticatedFinanceAgingRouteImport.update({
+    id: '/aging',
+    path: '/aging',
+    getParentRoute: () => AuthenticatedFinanceRoute,
+  } as any)
 const AuthenticatedClassesManageRoute =
   AuthenticatedClassesManageRouteImport.update({
     id: '/manage',
@@ -245,6 +258,7 @@ export interface FileRoutesByFullPath {
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/boarding': typeof AuthenticatedBoardingRoute
   '/classes': typeof AuthenticatedClassesRouteWithChildren
+  '/expenses': typeof AuthenticatedExpensesRoute
   '/finance': typeof AuthenticatedFinanceRouteWithChildren
   '/hr': typeof AuthenticatedHrRouteWithChildren
   '/library': typeof AuthenticatedLibraryRoute
@@ -257,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/wallet': typeof AuthenticatedWalletRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
   '/classes/manage': typeof AuthenticatedClassesManageRoute
+  '/finance/aging': typeof AuthenticatedFinanceAgingRoute
   '/hr/$staffId': typeof AuthenticatedHrStaffIdRoute
   '/payroll/$runId': typeof AuthenticatedPayrollRunIdRoute
   '/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
@@ -279,6 +294,7 @@ export interface FileRoutesByTo {
   '/admissions': typeof AuthenticatedAdmissionsRouteWithChildren
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/boarding': typeof AuthenticatedBoardingRoute
+  '/expenses': typeof AuthenticatedExpensesRoute
   '/finance': typeof AuthenticatedFinanceRouteWithChildren
   '/hr': typeof AuthenticatedHrRouteWithChildren
   '/library': typeof AuthenticatedLibraryRoute
@@ -291,6 +307,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
   '/classes/manage': typeof AuthenticatedClassesManageRoute
+  '/finance/aging': typeof AuthenticatedFinanceAgingRoute
   '/hr/$staffId': typeof AuthenticatedHrStaffIdRoute
   '/payroll/$runId': typeof AuthenticatedPayrollRunIdRoute
   '/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
@@ -316,6 +333,7 @@ export interface FileRoutesById {
   '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
   '/_authenticated/boarding': typeof AuthenticatedBoardingRoute
   '/_authenticated/classes': typeof AuthenticatedClassesRouteWithChildren
+  '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
   '/_authenticated/finance': typeof AuthenticatedFinanceRouteWithChildren
   '/_authenticated/hr': typeof AuthenticatedHrRouteWithChildren
   '/_authenticated/library': typeof AuthenticatedLibraryRoute
@@ -329,6 +347,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admissions/new': typeof AuthenticatedAdmissionsNewRoute
   '/_authenticated/classes/manage': typeof AuthenticatedClassesManageRoute
+  '/_authenticated/finance/aging': typeof AuthenticatedFinanceAgingRoute
   '/_authenticated/hr/$staffId': typeof AuthenticatedHrStaffIdRoute
   '/_authenticated/payroll/$runId': typeof AuthenticatedPayrollRunIdRoute
   '/_authenticated/reports/coefficients': typeof AuthenticatedReportsCoefficientsRoute
@@ -355,6 +374,7 @@ export interface FileRouteTypes {
     | '/attendance'
     | '/boarding'
     | '/classes'
+    | '/expenses'
     | '/finance'
     | '/hr'
     | '/library'
@@ -367,6 +387,7 @@ export interface FileRouteTypes {
     | '/wallet'
     | '/admissions/new'
     | '/classes/manage'
+    | '/finance/aging'
     | '/hr/$staffId'
     | '/payroll/$runId'
     | '/reports/coefficients'
@@ -389,6 +410,7 @@ export interface FileRouteTypes {
     | '/admissions'
     | '/attendance'
     | '/boarding'
+    | '/expenses'
     | '/finance'
     | '/hr'
     | '/library'
@@ -401,6 +423,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admissions/new'
     | '/classes/manage'
+    | '/finance/aging'
     | '/hr/$staffId'
     | '/payroll/$runId'
     | '/reports/coefficients'
@@ -425,6 +448,7 @@ export interface FileRouteTypes {
     | '/_authenticated/attendance'
     | '/_authenticated/boarding'
     | '/_authenticated/classes'
+    | '/_authenticated/expenses'
     | '/_authenticated/finance'
     | '/_authenticated/hr'
     | '/_authenticated/library'
@@ -438,6 +462,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/admissions/new'
     | '/_authenticated/classes/manage'
+    | '/_authenticated/finance/aging'
     | '/_authenticated/hr/$staffId'
     | '/_authenticated/payroll/$runId'
     | '/_authenticated/reports/coefficients'
@@ -560,6 +585,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinanceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/expenses': {
+      id: '/_authenticated/expenses'
+      path: '/expenses'
+      fullPath: '/expenses'
+      preLoaderRoute: typeof AuthenticatedExpensesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/classes': {
       id: '/_authenticated/classes'
       path: '/classes'
@@ -672,6 +704,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHrStaffIdRouteImport
       parentRoute: typeof AuthenticatedHrRoute
     }
+    '/_authenticated/finance/aging': {
+      id: '/_authenticated/finance/aging'
+      path: '/aging'
+      fullPath: '/finance/aging'
+      preLoaderRoute: typeof AuthenticatedFinanceAgingRouteImport
+      parentRoute: typeof AuthenticatedFinanceRoute
+    }
     '/_authenticated/classes/manage': {
       id: '/_authenticated/classes/manage'
       path: '/manage'
@@ -738,10 +777,12 @@ const AuthenticatedClassesRouteWithChildren =
   AuthenticatedClassesRoute._addFileChildren(AuthenticatedClassesRouteChildren)
 
 interface AuthenticatedFinanceRouteChildren {
+  AuthenticatedFinanceAgingRoute: typeof AuthenticatedFinanceAgingRoute
   AuthenticatedFinanceReceiptPaymentIdRoute: typeof AuthenticatedFinanceReceiptPaymentIdRoute
 }
 
 const AuthenticatedFinanceRouteChildren: AuthenticatedFinanceRouteChildren = {
+  AuthenticatedFinanceAgingRoute: AuthenticatedFinanceAgingRoute,
   AuthenticatedFinanceReceiptPaymentIdRoute:
     AuthenticatedFinanceReceiptPaymentIdRoute,
 }
@@ -812,6 +853,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAttendanceRoute: typeof AuthenticatedAttendanceRoute
   AuthenticatedBoardingRoute: typeof AuthenticatedBoardingRoute
   AuthenticatedClassesRoute: typeof AuthenticatedClassesRouteWithChildren
+  AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRouteWithChildren
   AuthenticatedHrRoute: typeof AuthenticatedHrRouteWithChildren
   AuthenticatedLibraryRoute: typeof AuthenticatedLibraryRoute
@@ -835,6 +877,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAttendanceRoute: AuthenticatedAttendanceRoute,
   AuthenticatedBoardingRoute: AuthenticatedBoardingRoute,
   AuthenticatedClassesRoute: AuthenticatedClassesRouteWithChildren,
+  AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
   AuthenticatedFinanceRoute: AuthenticatedFinanceRouteWithChildren,
   AuthenticatedHrRoute: AuthenticatedHrRouteWithChildren,
   AuthenticatedLibraryRoute: AuthenticatedLibraryRoute,
@@ -863,13 +906,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
