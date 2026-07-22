@@ -23,7 +23,7 @@ export const listFeesAging = createServerFn({ method: "GET" })
     // Load students with a balance and their guardians
     const { data: students, error: se } = await supabase
       .from("students")
-      .select("id, first_name, last_name, matricule, class_name, fee_balance, guardian_phone, guardian_name, guardians(full_name, phone, relationship)")
+      .select("id, first_name, last_name, matricule, class_name, fee_balance, guardians(full_name, phone, relationship)")
       .eq("school_id", schoolId)
       .eq("status", "active")
       .gt("fee_balance", 0)
@@ -66,8 +66,8 @@ export const listFeesAging = createServerFn({ method: "GET" })
         matricule: s.matricule,
         class_name: s.class_name,
         fee_balance: s.fee_balance ?? 0,
-        guardian_name: g?.full_name ?? s.guardian_name ?? null,
-        guardian_phone: g?.phone ?? s.guardian_phone ?? null,
+        guardian_name: g?.full_name ?? null,
+        guardian_phone: g?.phone ?? null,
         guardian_relationship: g?.relationship ?? null,
         earliest_due: earliest,
         days_overdue: Math.max(days, 0),
