@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Wallet, Receipt, TrendingUp, Users, Plus, Trash2, Printer, Download, RefreshCw, FileText, Pencil } from "lucide-react";
+import { Wallet, Receipt, TrendingUp, Users, Plus, Trash2, Printer, Download, RefreshCw, FileText, Pencil, AlertTriangle, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
@@ -121,6 +121,13 @@ function FinancePage() {
         title="Finance"
         description="Fee structures, payments, and collection tracking"
         actions={
+          <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/finance/aging"><AlertTriangle className="mr-2 h-4 w-4" />Fees aging</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/expenses"><TrendingDown className="mr-2 h-4 w-4" />Expenses</Link>
+          </Button>
           <Button
             variant="outline" size="sm"
             onClick={async () => {
@@ -131,6 +138,7 @@ function FinancePage() {
           >
             <RefreshCw className="mr-2 h-4 w-4" />Recompute balances
           </Button>
+          </div>
         }
       />
 
