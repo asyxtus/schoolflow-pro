@@ -23,6 +23,8 @@ import {
   Bus,
   Library,
   BarChart3,
+  TrendingDown,
+  AlertTriangle,
 } from "lucide-react";
 
 import {
@@ -69,6 +71,8 @@ const groups = [
     label: "Operations",
     items: [
       { title: "Finance", url: "/finance", icon: Wallet },
+      { title: "Fees aging", url: "/finance/aging", icon: AlertTriangle },
+      { title: "Expenses", url: "/expenses", icon: TrendingDown },
       { title: "Student Wallet", url: "/wallet", icon: PiggyBank },
       { title: "Boarding", url: "/boarding", icon: BedDouble },
       { title: "Transport", url: "/transport", icon: Bus },
