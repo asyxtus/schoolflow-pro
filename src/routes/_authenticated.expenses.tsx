@@ -483,6 +483,15 @@ function ExpensesPage() {
                 <Label>Note</Label>
                 <Textarea rows={2} value={expEdit.note} onChange={(e) => setExpEdit({ ...expEdit, note: e.target.value })} />
               </div>
+              <div className="grid gap-1.5">
+                <Label>Receipt link</Label>
+                <Input
+                  type="url"
+                  placeholder="https://… (paste a photo or PDF link)"
+                  value={expEdit.receipt_url}
+                  onChange={(e) => setExpEdit({ ...expEdit, receipt_url: e.target.value })}
+                />
+              </div>
             </div>
           )}
           <DialogFooter>
