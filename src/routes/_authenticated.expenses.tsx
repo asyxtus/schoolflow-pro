@@ -264,6 +264,7 @@ function ExpensesPage() {
                               reference: e.reference ?? "", note: e.note ?? "",
                               spent_at: new Date(e.spent_at).toISOString().slice(0, 10),
                               status: e.status as ExpenseStatus,
+                              receipt_url: (e as { receipt_url?: string }).receipt_url ?? "",
                             });
                             setExpOpen(true);
                           }}>
