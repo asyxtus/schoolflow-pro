@@ -42,6 +42,236 @@ export const Route = createFileRoute("/_authenticated/expenses")({
 const fmt = (n: number) => new Intl.NumberFormat("fr-FR").format(n).replace(/,/g, " ") + " FCFA";
 const METHODS: ExpenseMethod[] = ["cash", "momo", "bank", "cheque", "other"];
 
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function BudgetsPanel() {
+  const qc = useQueryClient();
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState<number | null>(now.getMonth() + 1);
+  const listFn = useServerFn(listBudgets);
+  const saveFn = useServerFn(upsertBudget);
+  const bq = useQuery({
+    queryKey: ["budgets", year, month],
+    queryFn: () => listFn({ data: { year, month } }),
+  });
+  const [drafts, setDrafts] = useState<Record<string, number>>({});
+
+  const save = useMutation({
+    mutationFn: ({ category_id, amount_fcfa }: { category_id: string; amount_fcfa: number }) =>
+      saveFn({ data: { category_id, year, month, amount_fcfa } }),
+    onSuccess: () => {
+      toast.success("Budget saved");
+      qc.invalidateQueries({ queryKey: ["budgets"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Card>
+      <CardContent className="space-y-4 p-4">
+        <div className="flex flex-wrap gap-2">
+          <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
+            <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {[now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map((y) =>
+                <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={month === null ? "all" : String(month)} onValueChange={(v) => setMonth(v === "all" ? null : Number(v))}>
+            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Annual</SelectItem>
+              {MONTH_NAMES.map((n, i) => <SelectItem key={i} value={String(i + 1)}>{n}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {(bq.data?.rows ?? []).length === 0 ? (
+          <p className="text-sm text-muted-foreground">Add expense categories first.</p>
+        ) : (
+          <ul className="divide-y">
+            {(bq.data?.rows ?? []).map((r) => {
+              const draft = drafts[r.category_id] ?? r.budget;
+              const pct = r.budget > 0 ? Math.min(100, Math.round((r.spent / r.budget) * 100)) : 0;
+              const over = r.budget > 0 && r.spent > r.budget;
+              return (
+                <li key={r.category_id} className="flex flex-col gap-2 py-3 md:flex-row md:items-center md:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">{r.name}</p>
+                      <p className={"text-sm " + (over ? "text-red-600 font-semibold" : "text-muted-foreground")}>
+                        {fmt(r.spent)} / {fmt(r.budget)}
+                      </p>
+                    </div>
+                    {r.budget > 0 && <Progress value={pct} className="mt-1.5 h-2" />}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      className="w-32"
+                      value={draft}
+                      onChange={(e) => setDrafts({ ...drafts, [r.category_id]: Number(e.target.value) })}
+                    />
+                    <Button size="sm" onClick={() => save.mutate({ category_id: r.category_id, amount_fcfa: draft })}>
+                      Save
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function RecurringPanel() {
+  const qc = useQueryClient();
+  const listFn = useServerFn(listRecurring);
+  const saveFn = useServerFn(upsertRecurring);
+  const delFn = useServerFn(deleteRecurring);
+  const runFn = useServerFn(runRecurringNow);
+  const catsFn = useServerFn(listExpenseCategories);
+  const rq = useQuery({ queryKey: ["recurring"], queryFn: () => listFn() });
+  const catsQ = useQuery({ queryKey: ["expense-categories"], queryFn: () => catsFn() });
+
+  const [open, setOpen] = useState(false);
+  const [edit, setEdit] = useState<null | {
+    id?: string; label: string; amount_fcfa: number; method: ExpenseMethod;
+    category_id: string; day_of_month: number; active: boolean; note: string;
+  }>(null);
+  const openNew = () => { setEdit({ label: "", amount_fcfa: 0, method: "cash", category_id: "", day_of_month: 1, active: true, note: "" }); setOpen(true); };
+
+  const save = useMutation({
+    mutationFn: () => saveFn({ data: {
+      id: edit!.id, label: edit!.label, amount_fcfa: Number(edit!.amount_fcfa),
+      method: edit!.method, category_id: edit!.category_id || null,
+      day_of_month: edit!.day_of_month, active: edit!.active, note: edit!.note || undefined,
+    } }),
+    onSuccess: () => { toast.success("Saved"); setOpen(false); qc.invalidateQueries({ queryKey: ["recurring"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const del = useMutation({
+    mutationFn: (id: string) => delFn({ data: { id } }),
+    onSuccess: () => { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["recurring"] }); },
+  });
+  const runNow = useMutation({
+    mutationFn: () => runFn(),
+    onSuccess: ({ created }) => {
+      toast.success(created ? `Generated ${created} pending expense${created === 1 ? "" : "s"}` : "Nothing to generate");
+      qc.invalidateQueries({ queryKey: ["expenses"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Card>
+      <CardContent className="space-y-3 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-muted-foreground">Auto-generate a pending expense every month for rent, internet, water, etc.</p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => runNow.mutate()}>Generate now</Button>
+            <Button size="sm" onClick={openNew}><Plus className="mr-1 h-4 w-4" />Add</Button>
+          </div>
+        </div>
+
+        {(rq.data ?? []).length === 0 ? (
+          <p className="text-sm text-muted-foreground">No recurring expenses yet.</p>
+        ) : (
+          <ul className="divide-y">
+            {(rq.data ?? []).map((r) => {
+              const catName = (r as { expense_categories?: { name?: string } }).expense_categories?.name;
+              return (
+                <li key={r.id} className="flex flex-col gap-2 py-3 md:flex-row md:items-center md:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium">{r.label}</p>
+                      {catName && <Badge variant="secondary">{catName}</Badge>}
+                      <Badge variant="outline">Day {r.day_of_month}</Badge>
+                      {!r.active && <Badge variant="destructive">Paused</Badge>}
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Last run: {r.last_generated_period ?? "never"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold">{fmt(r.amount_fcfa)}</p>
+                    <Button size="icon" variant="ghost" onClick={() => {
+                      setEdit({
+                        id: r.id, label: r.label, amount_fcfa: r.amount_fcfa, method: r.method as ExpenseMethod,
+                        category_id: r.category_id ?? "", day_of_month: r.day_of_month, active: r.active, note: r.note ?? "",
+                      });
+                      setOpen(true);
+                    }}><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => { if (confirm("Delete?")) del.mutate(r.id); }}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>{edit?.id ? "Edit recurring" : "New recurring expense"}</DialogTitle></DialogHeader>
+            {edit && (
+              <div className="grid gap-3">
+                <div className="grid gap-1.5"><Label>Label</Label>
+                  <Input value={edit.label} onChange={(e) => setEdit({ ...edit, label: e.target.value })} placeholder="e.g. Internet" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="grid gap-1.5"><Label>Amount (FCFA)</Label>
+                    <Input type="number" min={0} value={edit.amount_fcfa} onChange={(e) => setEdit({ ...edit, amount_fcfa: Number(e.target.value) })} />
+                  </div>
+                  <div className="grid gap-1.5"><Label>Day of month</Label>
+                    <Input type="number" min={1} max={28} value={edit.day_of_month} onChange={(e) => setEdit({ ...edit, day_of_month: Number(e.target.value) })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="grid gap-1.5"><Label>Method</Label>
+                    <Select value={edit.method} onValueChange={(v) => setEdit({ ...edit, method: v as ExpenseMethod })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>{METHODS.map((m) => <SelectItem key={m} value={m} className="capitalize">{m}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-1.5"><Label>Category</Label>
+                    <Select value={edit.category_id || "none"} onValueChange={(v) => setEdit({ ...edit, category_id: v === "none" ? "" : v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Uncategorized</SelectItem>
+                        {(catsQ.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between rounded-md border p-3">
+                  <div>
+                    <Label>Active</Label>
+                    <p className="text-xs text-muted-foreground">When off, no pending expenses are generated.</p>
+                  </div>
+                  <Switch checked={edit.active} onCheckedChange={(v) => setEdit({ ...edit, active: v })} />
+                </div>
+                <div className="grid gap-1.5"><Label>Note</Label>
+                  <Textarea rows={2} value={edit.note} onChange={(e) => setEdit({ ...edit, note: e.target.value })} />
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button onClick={() => save.mutate()} disabled={!edit?.label || !edit?.amount_fcfa}>Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
+  );
+}
+
 function ExpensesPage() {
   const qc = useQueryClient();
   const catsFn = useServerFn(listExpenseCategories);
