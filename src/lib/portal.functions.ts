@@ -76,12 +76,10 @@ export const getPortalBundle = createServerFn({ method: "GET" })
 
     const { student_id, school_id, id } = tok.data;
 
-    void supabaseAdmin
+    await supabaseAdmin
       .from("student_portal_tokens")
-      .update({ last_accessed_at: new Date().toISOString(), access_count: (0) })
-      .eq("id", id)
-      .then(() => undefined);
-    await supabaseAdmin.rpc as unknown; // no-op to satisfy tree-shaker
+      .update({ last_accessed_at: new Date().toISOString() })
+      .eq("id", id);
 
     const [studentQ, schoolQ, feesQ, paymentsQ, attendanceQ, gradesQ, messagesQ] = await Promise.all([
       supabaseAdmin.from("students")
@@ -89,7 +87,7 @@ export const getPortalBundle = createServerFn({ method: "GET" })
         .eq("id", student_id).single(),
       supabaseAdmin.from("schools").select("name, city, region, code").eq("id", school_id).single(),
       supabaseAdmin.from("student_fees")
-        .select("id, label, amount_fcfa, discount_fcfa, due_date, kind")
+        .select("id, label, amount_fcfa, discount_fcfa, due_date")
         .eq("student_id", student_id).order("due_date", { ascending: true }),
       supabaseAdmin.from("payments")
         .select("id, amount_fcfa, method, paid_at, receipt_no, reference")
@@ -98,7 +96,7 @@ export const getPortalBundle = createServerFn({ method: "GET" })
         .select("date, status, subject")
         .eq("student_id", student_id).order("date", { ascending: false }).limit(60),
       supabaseAdmin.from("grades")
-        .select("subject, sequence, ca_score, exam_score, total")
+        .select("subject, sequence, ca_score, exam_score")
         .eq("student_id", student_id).order("sequence", { ascending: true }),
       supabaseAdmin.from("messages")
         .select("id, subject, body, created_at, audience")
