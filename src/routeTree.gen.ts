@@ -13,6 +13,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
+import { Route as PortalTokenRouteImport } from './routes/portal.$token'
 import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated.wallet'
 import { Route as AuthenticatedTransportRouteImport } from './routes/_authenticated.transport'
 import { Route as AuthenticatedTimetableRouteImport } from './routes/_authenticated.timetable'
@@ -66,6 +67,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const PortalTokenRoute = PortalTokenRouteImport.update({
+  id: '/portal/$token',
+  path: '/portal/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedWalletRoute = AuthenticatedWalletRouteImport.update({
   id: '/wallet',
@@ -276,6 +282,7 @@ export interface FileRoutesByFullPath {
   '/timetable': typeof AuthenticatedTimetableRoute
   '/transport': typeof AuthenticatedTransportRoute
   '/wallet': typeof AuthenticatedWalletRoute
+  '/portal/$token': typeof PortalTokenRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
   '/classes/manage': typeof AuthenticatedClassesManageRoute
   '/finance/aging': typeof AuthenticatedFinanceAgingRoute
@@ -311,6 +318,7 @@ export interface FileRoutesByTo {
   '/timetable': typeof AuthenticatedTimetableRoute
   '/transport': typeof AuthenticatedTransportRoute
   '/wallet': typeof AuthenticatedWalletRoute
+  '/portal/$token': typeof PortalTokenRoute
   '/': typeof AuthenticatedIndexRoute
   '/admissions/new': typeof AuthenticatedAdmissionsNewRoute
   '/classes/manage': typeof AuthenticatedClassesManageRoute
@@ -352,6 +360,7 @@ export interface FileRoutesById {
   '/_authenticated/timetable': typeof AuthenticatedTimetableRoute
   '/_authenticated/transport': typeof AuthenticatedTransportRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
+  '/portal/$token': typeof PortalTokenRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admissions/new': typeof AuthenticatedAdmissionsNewRoute
   '/_authenticated/classes/manage': typeof AuthenticatedClassesManageRoute
@@ -394,6 +403,7 @@ export interface FileRouteTypes {
     | '/timetable'
     | '/transport'
     | '/wallet'
+    | '/portal/$token'
     | '/admissions/new'
     | '/classes/manage'
     | '/finance/aging'
@@ -429,6 +439,7 @@ export interface FileRouteTypes {
     | '/timetable'
     | '/transport'
     | '/wallet'
+    | '/portal/$token'
     | '/'
     | '/admissions/new'
     | '/classes/manage'
@@ -469,6 +480,7 @@ export interface FileRouteTypes {
     | '/_authenticated/timetable'
     | '/_authenticated/transport'
     | '/_authenticated/wallet'
+    | '/portal/$token'
     | '/_authenticated/'
     | '/_authenticated/admissions/new'
     | '/_authenticated/classes/manage'
@@ -494,6 +506,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   OnboardingRoute: typeof OnboardingRoute
+  PortalTokenRoute: typeof PortalTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -525,6 +538,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/portal/$token': {
+      id: '/portal/$token'
+      path: '/portal/$token'
+      fullPath: '/portal/$token'
+      preLoaderRoute: typeof PortalTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/wallet': {
       id: '/_authenticated/wallet'
@@ -922,6 +942,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   OnboardingRoute: OnboardingRoute,
+  PortalTokenRoute: PortalTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
