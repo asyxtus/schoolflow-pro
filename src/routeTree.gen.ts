@@ -22,6 +22,7 @@ import { Route as AuthenticatedPayrollRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated.messages'
 import { Route as AuthenticatedLibraryRouteImport } from './routes/_authenticated.library'
 import { Route as AuthenticatedHrRouteImport } from './routes/_authenticated.hr'
+import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated.finance'
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated.expenses'
 import { Route as AuthenticatedClassesRouteImport } from './routes/_authenticated.classes'
 import { Route as AuthenticatedBoardingRouteImport } from './routes/_authenticated.boarding'
@@ -111,6 +112,11 @@ const AuthenticatedHrRoute = AuthenticatedHrRouteImport.update({
   path: '/hr',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFinanceRoute = AuthenticatedFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
   id: '/expenses',
   path: '/expenses',
@@ -156,9 +162,9 @@ const AuthenticatedSettingsIndexRoute =
   } as any)
 const AuthenticatedFinanceIndexRoute =
   AuthenticatedFinanceIndexRouteImport.update({
-    id: '/finance/',
-    path: '/finance/',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedFinanceRoute,
   } as any)
 const AuthenticatedClassesIndexRoute =
   AuthenticatedClassesIndexRouteImport.update({
@@ -215,9 +221,9 @@ const AuthenticatedHrStaffIdRoute = AuthenticatedHrStaffIdRouteImport.update({
 } as any)
 const AuthenticatedFinanceAgingRoute =
   AuthenticatedFinanceAgingRouteImport.update({
-    id: '/finance/aging',
-    path: '/finance/aging',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/aging',
+    path: '/aging',
+    getParentRoute: () => AuthenticatedFinanceRoute,
   } as any)
 const AuthenticatedClassesManageRoute =
   AuthenticatedClassesManageRouteImport.update({
@@ -239,9 +245,9 @@ const AuthenticatedPayrollPayslipPayslipIdRoute =
   } as any)
 const AuthenticatedFinanceReceiptPaymentIdRoute =
   AuthenticatedFinanceReceiptPaymentIdRouteImport.update({
-    id: '/finance/receipt/$paymentId',
-    path: '/finance/receipt/$paymentId',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/receipt/$paymentId',
+    path: '/receipt/$paymentId',
+    getParentRoute: () => AuthenticatedFinanceRoute,
   } as any)
 const AuthenticatedReportsBulletinStudentIdSequenceRoute =
   AuthenticatedReportsBulletinStudentIdSequenceRouteImport.update({
@@ -260,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/boarding': typeof AuthenticatedBoardingRoute
   '/classes': typeof AuthenticatedClassesRouteWithChildren
   '/expenses': typeof AuthenticatedExpensesRoute
+  '/finance': typeof AuthenticatedFinanceRouteWithChildren
   '/hr': typeof AuthenticatedHrRouteWithChildren
   '/library': typeof AuthenticatedLibraryRoute
   '/messages': typeof AuthenticatedMessagesRoute
@@ -335,6 +342,7 @@ export interface FileRoutesById {
   '/_authenticated/boarding': typeof AuthenticatedBoardingRoute
   '/_authenticated/classes': typeof AuthenticatedClassesRouteWithChildren
   '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
+  '/_authenticated/finance': typeof AuthenticatedFinanceRouteWithChildren
   '/_authenticated/hr': typeof AuthenticatedHrRouteWithChildren
   '/_authenticated/library': typeof AuthenticatedLibraryRoute
   '/_authenticated/messages': typeof AuthenticatedMessagesRoute
@@ -376,6 +384,7 @@ export interface FileRouteTypes {
     | '/boarding'
     | '/classes'
     | '/expenses'
+    | '/finance'
     | '/hr'
     | '/library'
     | '/messages'
@@ -450,6 +459,7 @@ export interface FileRouteTypes {
     | '/_authenticated/boarding'
     | '/_authenticated/classes'
     | '/_authenticated/expenses'
+    | '/_authenticated/finance'
     | '/_authenticated/hr'
     | '/_authenticated/library'
     | '/_authenticated/messages'
@@ -579,6 +589,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHrRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/finance': {
+      id: '/_authenticated/finance'
+      path: '/finance'
+      fullPath: '/finance'
+      preLoaderRoute: typeof AuthenticatedFinanceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/expenses': {
       id: '/_authenticated/expenses'
       path: '/expenses'
@@ -637,10 +654,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/finance/': {
       id: '/_authenticated/finance/'
-      path: '/finance'
+      path: '/'
       fullPath: '/finance/'
       preLoaderRoute: typeof AuthenticatedFinanceIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedFinanceRoute
     }
     '/_authenticated/classes/': {
       id: '/_authenticated/classes/'
@@ -707,10 +724,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/finance/aging': {
       id: '/_authenticated/finance/aging'
-      path: '/finance/aging'
+      path: '/aging'
       fullPath: '/finance/aging'
       preLoaderRoute: typeof AuthenticatedFinanceAgingRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedFinanceRoute
     }
     '/_authenticated/classes/manage': {
       id: '/_authenticated/classes/manage'
@@ -735,10 +752,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/finance/receipt/$paymentId': {
       id: '/_authenticated/finance/receipt/$paymentId'
-      path: '/finance/receipt/$paymentId'
+      path: '/receipt/$paymentId'
       fullPath: '/finance/receipt/$paymentId'
       preLoaderRoute: typeof AuthenticatedFinanceReceiptPaymentIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedFinanceRoute
     }
     '/_authenticated/reports/bulletin/$studentId/$sequence': {
       id: '/_authenticated/reports/bulletin/$studentId/$sequence'
@@ -776,6 +793,22 @@ const AuthenticatedClassesRouteChildren: AuthenticatedClassesRouteChildren = {
 
 const AuthenticatedClassesRouteWithChildren =
   AuthenticatedClassesRoute._addFileChildren(AuthenticatedClassesRouteChildren)
+
+interface AuthenticatedFinanceRouteChildren {
+  AuthenticatedFinanceAgingRoute: typeof AuthenticatedFinanceAgingRoute
+  AuthenticatedFinanceIndexRoute: typeof AuthenticatedFinanceIndexRoute
+  AuthenticatedFinanceReceiptPaymentIdRoute: typeof AuthenticatedFinanceReceiptPaymentIdRoute
+}
+
+const AuthenticatedFinanceRouteChildren: AuthenticatedFinanceRouteChildren = {
+  AuthenticatedFinanceAgingRoute: AuthenticatedFinanceAgingRoute,
+  AuthenticatedFinanceIndexRoute: AuthenticatedFinanceIndexRoute,
+  AuthenticatedFinanceReceiptPaymentIdRoute:
+    AuthenticatedFinanceReceiptPaymentIdRoute,
+}
+
+const AuthenticatedFinanceRouteWithChildren =
+  AuthenticatedFinanceRoute._addFileChildren(AuthenticatedFinanceRouteChildren)
 
 interface AuthenticatedHrRouteChildren {
   AuthenticatedHrStaffIdRoute: typeof AuthenticatedHrStaffIdRoute
@@ -841,6 +874,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBoardingRoute: typeof AuthenticatedBoardingRoute
   AuthenticatedClassesRoute: typeof AuthenticatedClassesRouteWithChildren
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
+  AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRouteWithChildren
   AuthenticatedHrRoute: typeof AuthenticatedHrRouteWithChildren
   AuthenticatedLibraryRoute: typeof AuthenticatedLibraryRoute
   AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
@@ -851,13 +885,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTransportRoute: typeof AuthenticatedTransportRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
-  AuthenticatedFinanceAgingRoute: typeof AuthenticatedFinanceAgingRoute
   AuthenticatedSettingsAuditRoute: typeof AuthenticatedSettingsAuditRoute
   AuthenticatedSettingsUsersRoute: typeof AuthenticatedSettingsUsersRoute
   AuthenticatedStudentsNewRoute: typeof AuthenticatedStudentsNewRoute
-  AuthenticatedFinanceIndexRoute: typeof AuthenticatedFinanceIndexRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
-  AuthenticatedFinanceReceiptPaymentIdRoute: typeof AuthenticatedFinanceReceiptPaymentIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -867,6 +898,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBoardingRoute: AuthenticatedBoardingRoute,
   AuthenticatedClassesRoute: AuthenticatedClassesRouteWithChildren,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
+  AuthenticatedFinanceRoute: AuthenticatedFinanceRouteWithChildren,
   AuthenticatedHrRoute: AuthenticatedHrRouteWithChildren,
   AuthenticatedLibraryRoute: AuthenticatedLibraryRoute,
   AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
@@ -877,14 +909,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTransportRoute: AuthenticatedTransportRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
-  AuthenticatedFinanceAgingRoute: AuthenticatedFinanceAgingRoute,
   AuthenticatedSettingsAuditRoute: AuthenticatedSettingsAuditRoute,
   AuthenticatedSettingsUsersRoute: AuthenticatedSettingsUsersRoute,
   AuthenticatedStudentsNewRoute: AuthenticatedStudentsNewRoute,
-  AuthenticatedFinanceIndexRoute: AuthenticatedFinanceIndexRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
-  AuthenticatedFinanceReceiptPaymentIdRoute:
-    AuthenticatedFinanceReceiptPaymentIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -898,3 +926,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
