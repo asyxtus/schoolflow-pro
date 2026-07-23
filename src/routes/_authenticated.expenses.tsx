@@ -28,6 +28,12 @@ import {
   listExpenses, upsertExpense, deleteExpense, setExpenseStatus,
   cashPosition, type ExpenseMethod, type ExpenseStatus,
 } from "@/lib/expenses.functions";
+import { listBudgets, upsertBudget } from "@/lib/budgets.functions";
+import {
+  listRecurring, upsertRecurring, deleteRecurring, runRecurringNow,
+} from "@/lib/recurring-expenses.functions";
+import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/expenses")({
   component: ExpensesPage,
