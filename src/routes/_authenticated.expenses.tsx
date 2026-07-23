@@ -189,6 +189,8 @@ function ExpensesPage() {
           <TabsTrigger value="expenses"><Receipt className="mr-1 h-4 w-4" />Expenses</TabsTrigger>
           <TabsTrigger value="categories"><Tag className="mr-1 h-4 w-4" />Categories</TabsTrigger>
           <TabsTrigger value="vendors"><Building2 className="mr-1 h-4 w-4" />Vendors</TabsTrigger>
+          <TabsTrigger value="budgets">Budgets</TabsTrigger>
+          <TabsTrigger value="recurring">Recurring</TabsTrigger>
           <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
         </TabsList>
 
