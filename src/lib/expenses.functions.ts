@@ -124,6 +124,7 @@ export const upsertExpense = createServerFn({ method: "POST" })
     note?: string;
     spent_at?: string;
     status?: ExpenseStatus;
+    receipt_url?: string | null;
   }) => d)
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
@@ -141,6 +142,7 @@ export const upsertExpense = createServerFn({ method: "POST" })
       spent_at: data.spent_at ?? new Date().toISOString(),
       status: data.status ?? "approved",
       recorded_by: userId,
+      receipt_url: data.receipt_url ?? null,
     };
     const { error } = data.id
       ? await supabase.from("expenses").update(row).eq("id", data.id)
