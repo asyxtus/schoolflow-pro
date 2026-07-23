@@ -78,9 +78,9 @@ function ExpensesPage() {
 
   // ── Expense dialog ────────────────────────────────────────────────
   const [expOpen, setExpOpen] = useState(false);
-  const [expEdit, setExpEdit] = useState<null | { id?: string; label: string; amount_fcfa: number; method: ExpenseMethod; category_id: string; vendor_id: string; reference: string; note: string; spent_at: string; status: ExpenseStatus }>(null);
+  const [expEdit, setExpEdit] = useState<null | { id?: string; label: string; amount_fcfa: number; method: ExpenseMethod; category_id: string; vendor_id: string; reference: string; note: string; spent_at: string; status: ExpenseStatus; receipt_url: string }>(null);
   const openExpNew = () => {
-    setExpEdit({ label: "", amount_fcfa: 0, method: "cash", category_id: "", vendor_id: "", reference: "", note: "", spent_at: new Date().toISOString().slice(0, 10), status: "approved" });
+    setExpEdit({ label: "", amount_fcfa: 0, method: "cash", category_id: "", vendor_id: "", reference: "", note: "", spent_at: new Date().toISOString().slice(0, 10), status: "approved", receipt_url: "" });
     setExpOpen(true);
   };
 
@@ -96,6 +96,7 @@ function ExpensesPage() {
       note: expEdit!.note || undefined,
       spent_at: expEdit!.spent_at ? new Date(expEdit!.spent_at).toISOString() : undefined,
       status: expEdit!.status,
+      receipt_url: expEdit!.receipt_url || undefined,
     } }),
     onSuccess: () => { toast.success("Expense saved"); setExpOpen(false); refetch(); },
     onError: (e: Error) => toast.error(e.message),
