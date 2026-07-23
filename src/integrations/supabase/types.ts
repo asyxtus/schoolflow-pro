@@ -741,6 +741,57 @@ export type Database = {
           },
         ]
       }
+      expense_budgets: {
+        Row: {
+          amount_fcfa: number
+          category_id: string
+          created_at: string
+          id: string
+          note: string | null
+          period_month: number | null
+          period_year: number
+          school_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_fcfa: number
+          category_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          period_month?: number | null
+          period_year: number
+          school_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_fcfa?: number
+          category_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          period_month?: number | null
+          period_year?: number
+          school_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_budgets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_budgets_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_categories: {
         Row: {
           created_at: string
@@ -784,6 +835,7 @@ export type Database = {
           label: string
           method: string
           note: string | null
+          receipt_url: string | null
           recorded_by: string | null
           reference: string | null
           school_id: string
@@ -802,6 +854,7 @@ export type Database = {
           label: string
           method?: string
           note?: string | null
+          receipt_url?: string | null
           recorded_by?: string | null
           reference?: string | null
           school_id: string
@@ -820,6 +873,7 @@ export type Database = {
           label?: string
           method?: string
           note?: string | null
+          receipt_url?: string | null
           recorded_by?: string | null
           reference?: string | null
           school_id?: string
@@ -1564,6 +1618,76 @@ export type Database = {
           },
         ]
       }
+      recurring_expenses: {
+        Row: {
+          active: boolean
+          amount_fcfa: number
+          category_id: string | null
+          created_at: string
+          day_of_month: number
+          id: string
+          label: string
+          last_generated_period: string | null
+          method: string
+          note: string | null
+          school_id: string
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          amount_fcfa: number
+          category_id?: string | null
+          created_at?: string
+          day_of_month?: number
+          id?: string
+          label: string
+          last_generated_period?: string | null
+          method?: string
+          note?: string | null
+          school_id: string
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          amount_fcfa?: number
+          category_id?: string | null
+          created_at?: string
+          day_of_month?: number
+          id?: string
+          label?: string
+          last_generated_period?: string | null
+          method?: string
+          note?: string | null
+          school_id?: string
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_expenses_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_expenses_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schools: {
         Row: {
           city: string | null
@@ -1873,6 +1997,60 @@ export type Database = {
             foreignKeyName: "student_fees_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_portal_tokens: {
+        Row: {
+          access_count: number
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          last_accessed_at: string | null
+          school_id: string
+          student_id: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          access_count?: number
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          school_id: string
+          student_id: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          access_count?: number
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          school_id?: string
+          student_id?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_portal_tokens_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_portal_tokens_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
