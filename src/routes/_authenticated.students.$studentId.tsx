@@ -1,5 +1,8 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useMutation } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   CalendarDays,
@@ -10,6 +13,7 @@ import {
   Printer,
   ShieldAlert,
   Wallet,
+  Link as LinkIcon,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
@@ -26,6 +30,11 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { getStudentById } from "@/lib/students.functions";
+import { getOrCreatePortalToken } from "@/lib/portal.functions";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { formatFCFA } from "@/lib/mock/students";
 import type { Tables } from "@/integrations/supabase/types";
 
