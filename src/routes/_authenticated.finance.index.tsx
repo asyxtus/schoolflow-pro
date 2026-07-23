@@ -33,7 +33,7 @@ import {
 } from "@/lib/finance.functions";
 import { useClassOptions } from "@/hooks/use-classes";
 
-export const Route = createFileRoute("/_authenticated/finance")({
+export const Route = createFileRoute("/_authenticated/finance/")({
   component: FinancePage,
 });
 
