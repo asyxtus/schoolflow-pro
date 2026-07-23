@@ -353,6 +353,16 @@ function ExpensesPage() {
           </CardContent></Card>
         </TabsContent>
 
+        {/* Budgets */}
+        <TabsContent value="budgets" className="space-y-3">
+          <BudgetsPanel />
+        </TabsContent>
+
+        {/* Recurring */}
+        <TabsContent value="recurring" className="space-y-3">
+          <RecurringPanel />
+        </TabsContent>
+
         {/* Breakdown */}
         <TabsContent value="breakdown" className="space-y-3">
           <div className="grid gap-3 md:grid-cols-2">
