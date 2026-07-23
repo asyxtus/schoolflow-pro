@@ -76,6 +76,16 @@ function StudentProfile() {
   const feePercent = Math.round((feePaid / feeTotal) * 100);
   const primaryGuardian = student.guardians?.find((g) => g.is_primary) ?? student.guardians?.[0];
 
+  const tokenFn = useServerFn(getOrCreatePortalToken);
+  const [portalUrl, setPortalUrl] = useState<string | null>(null);
+  const genLink = useMutation({
+    mutationFn: (rotate: boolean) => tokenFn({ data: { studentId, rotate } }),
+    onSuccess: ({ token }) => {
+      setPortalUrl(`${window.location.origin}/portal/${token}`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <div className="mx-auto w-full max-w-7xl px-6 py-8">
       <div className="mb-4">
@@ -89,6 +99,9 @@ function StudentProfile() {
         description={`${student.matricule} · ${student.class_name ?? "—"}`}
         actions={
           <>
+            <Button variant="outline" size="sm" onClick={() => genLink.mutate(false)} disabled={genLink.isPending}>
+              <LinkIcon className="mr-2 h-4 w-4" /> Portal link
+            </Button>
             <Button variant="outline" size="sm">
               <Printer className="mr-2 h-4 w-4" /> Print profile
             </Button>
@@ -98,6 +111,27 @@ function StudentProfile() {
           </>
         }
       />
+
+      <Dialog open={!!portalUrl} onOpenChange={(o) => !o && setPortalUrl(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Guardian portal link</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Share this private link with the family. Anyone with it can view fees, grades, attendance and messages for this student.
+          </p>
+          <Input readOnly value={portalUrl ?? ""} onFocus={(e) => e.currentTarget.select()} />
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={() => { if (portalUrl) { navigator.clipboard.writeText(portalUrl); toast.success("Copied"); } }}
+            >Copy link</Button>
+            <Button variant="destructive" onClick={() => genLink.mutate(true)} disabled={genLink.isPending}>
+              Rotate link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         <Card className="h-fit overflow-hidden">
