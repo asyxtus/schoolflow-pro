@@ -29,6 +29,11 @@ import { getStudents } from "@/lib/students.functions";
 import { formatFCFA } from "@/lib/mock/students";
 import type { Tables } from "@/integrations/supabase/types";
 
+type StudentListItem = Tables<"students"> & {
+  registration_owed?: number;
+  registration_billed?: number;
+};
+
 const searchSchema = z.object({
   q: z.string().optional().default(""),
   class: z.string().optional().default("all"),
@@ -198,7 +203,7 @@ function StudentsPage() {
   );
 }
 
-type StudentRow = Tables<"students">;
+type StudentRow = StudentListItem;
 type FeeStatus = "paid" | "overdue";
 type StudentStatus = StudentRow["status"];
 
@@ -209,6 +214,7 @@ function deriveFeeStatus(balance: number): FeeStatus {
 function StudentRow({ student, onOpen }: { student: StudentRow; onOpen: (id: string) => void }) {
   const initials = (student.first_name[0] ?? "") + (student.last_name[0] ?? "");
   const feeStatus = deriveFeeStatus(student.fee_balance ?? 0);
+  const regOwed = student.registration_owed ?? 0;
   return (
     <TableRow className="group cursor-pointer hover:bg-muted/30" onClick={() => onOpen(student.id)}>
       <TableCell>
@@ -232,6 +238,11 @@ function StudentRow({ student, onOpen }: { student: StudentRow; onOpen: (id: str
               {student.gender === "male" ? "Male" : student.gender === "female" ? "Female" : "—"} · Born{" "}
               {student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : "—"}
             </div>
+            {regOwed > 0 && (
+              <Badge variant="outline" className="mt-1 border-destructive/30 bg-destructive/10 text-[10px] text-destructive">
+                Registration unpaid · {formatFCFA(regOwed)}
+              </Badge>
+            )}
           </div>
         </div>
       </TableCell>
