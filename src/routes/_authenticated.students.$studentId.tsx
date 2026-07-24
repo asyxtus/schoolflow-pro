@@ -71,9 +71,11 @@ function StudentProfile() {
   const { studentId } = Route.useParams();
   const { data: student } = useSuspenseQuery(studentQueryOptions(studentId));
   const initials = student.first_name[0] + student.last_name[0];
-  const feeTotal = 250_000;
-  const feePaid = Math.max(0, feeTotal - (student.fee_balance ?? 0));
-  const feePercent = Math.round((feePaid / feeTotal) * 100);
+  const feeTotal = student.total_billed ?? 0;
+  const feePaid = student.total_paid ?? 0;
+  const feePercent = feeTotal > 0 ? Math.round((Math.min(feePaid, feeTotal) / feeTotal) * 100) : 0;
+  const regOwed = student.registration_owed ?? 0;
+  const att = student.attendance_counts ?? { present: 0, absent: 0, late: 0, excused: 0, total: 0 };
   const primaryGuardian = student.guardians?.find((g) => g.is_primary) ?? student.guardians?.[0];
 
   const tokenFn = useServerFn(getOrCreatePortalToken);
@@ -111,6 +113,20 @@ function StudentProfile() {
           </>
         }
       />
+
+      {regOwed > 0 && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-destructive">
+            <ShieldAlert className="h-4 w-4" />
+            <span>
+              <span className="font-semibold">Registration fee unpaid</span> — {formatFCFA(regOwed)} outstanding.
+            </span>
+          </div>
+          <Button asChild size="sm" variant="destructive">
+            <Link to="/finance">Record payment</Link>
+          </Button>
+        </div>
+      )}
 
       <Dialog open={!!portalUrl} onOpenChange={(o) => !o && setPortalUrl(null)}>
         <DialogContent>
@@ -173,10 +189,10 @@ function StudentProfile() {
           <div className="grid gap-4 sm:grid-cols-3">
             <MetricCard
               label="Attendance (term)"
-              value={`${student.attendance_rate ?? 0}%`}
-              tone="primary"
+              value={att.total > 0 ? `${Number(student.attendance_rate ?? 0)}%` : "—"}
+              tone={att.total === 0 ? "muted" : Number(student.attendance_rate ?? 0) >= 90 ? "primary" : "warning"}
             />
-            <MetricCard label="Discipline flags" value="0" tone="muted" />
+            <MetricCard label="Records logged" value={String(att.total)} tone="muted" />
             <MetricCard
               label="Fee balance"
               value={(student.fee_balance ?? 0) === 0 ? "Cleared" : formatFCFA(student.fee_balance ?? 0)}
@@ -200,8 +216,9 @@ function StudentProfile() {
                   <Row label="Section" value={student.section ?? "—"} />
                   <Row label="Gender" value={student.gender === "male" ? "Male" : student.gender === "female" ? "Female" : "—"} />
                   <Row label="Emergency contact" value={student.guardian_phone ?? "—"} />
-                  <Row label="Sequence 1 average" value="14.2 / 20" />
-                  <Row label="Class rank" value="8th of 42" />
+                  <Row label="Enrolment date" value={student.enrolment_date ? new Date(student.enrolment_date).toLocaleDateString() : "—"} />
+                  <Row label="Total invoiced" value={formatFCFA(feeTotal)} />
+                  <Row label="Total paid" value={formatFCFA(feePaid)} />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -274,7 +291,7 @@ function StudentProfile() {
 
             <TabsContent value="fees" className="mt-4">
               <Card>
-                <CardHeader><CardTitle className="text-sm">Tuition — 2025 / 2026</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-sm">Fees summary</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-end justify-between">
                     <div>
@@ -284,7 +301,7 @@ function StudentProfile() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs text-muted-foreground">Total due</div>
+                      <div className="text-xs text-muted-foreground">Total invoiced</div>
                       <div className="text-lg font-semibold text-foreground">
                         {formatFCFA(feeTotal)}
                       </div>
@@ -292,7 +309,8 @@ function StudentProfile() {
                   </div>
                   <Progress value={feePercent} />
                   <div className="text-xs text-muted-foreground">
-                    {feePercent}% collected · Next installment due 15 Oct 2026
+                    {feeTotal > 0 ? `${feePercent}% collected` : "No invoices yet — will be generated from the class fee structure."}
+                    {regOwed > 0 && ` · Registration outstanding: ${formatFCFA(regOwed)}`}
                   </div>
                 </CardContent>
               </Card>
@@ -302,10 +320,12 @@ function StudentProfile() {
               <Card>
                 <CardHeader><CardTitle className="text-sm">Attendance — this term</CardTitle></CardHeader>
                 <CardContent className="space-y-3 text-sm">
-                  <Row label="Days present" value="58" />
-                  <Row label="Days absent" value="4" />
-                  <Row label="Late arrivals" value="2" />
-                  <Row label="Attendance rate" value={`${student.attendance_rate ?? 0}%`} />
+                  <Row label="Days present" value={String(att.present)} />
+                  <Row label="Days absent" value={String(att.absent)} />
+                  <Row label="Late arrivals" value={String(att.late)} />
+                  <Row label="Excused" value={String(att.excused)} />
+                  <Row label="Records logged" value={String(att.total)} />
+                  <Row label="Attendance rate" value={att.total > 0 ? `${Number(student.attendance_rate ?? 0)}%` : "—"} />
                 </CardContent>
               </Card>
             </TabsContent>
