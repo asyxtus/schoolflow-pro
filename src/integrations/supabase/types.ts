@@ -2684,6 +2684,10 @@ export type Database = {
         Args: { _school_id: string; _user_id: string }
         Returns: boolean
       }
+      compute_attendance_rate: {
+        Args: { _student_id: string }
+        Returns: number
+      }
       current_user_school_id: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -2718,6 +2722,10 @@ export type Database = {
       }
       recompute_book_counts: { Args: { _book_id: string }; Returns: undefined }
       recompute_payroll_run: { Args: { _run_id: string }; Returns: undefined }
+      recompute_student_attendance: {
+        Args: { _student_id: string }
+        Returns: undefined
+      }
       recompute_student_balance: {
         Args: { _student_id: string }
         Returns: undefined
@@ -2726,6 +2734,7 @@ export type Database = {
         Args: { _student_id: string }
         Returns: undefined
       }
+      registration_owed: { Args: { _student_id: string }; Returns: number }
     }
     Enums: {
       admission_stage:

@@ -10,15 +10,40 @@ export const getStudents = createServerFn({ method: "GET" })
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) throw new Error("No school assigned to this account");
 
-    const { data, error } = await supabase
-      .from("students")
-      .select("*")
-      .eq("school_id", schoolId)
-      .order("last_name", { ascending: true })
-      .order("first_name", { ascending: true });
+    const [studentsRes, regFeesRes, paysRes] = await Promise.all([
+      supabase
+        .from("students")
+        .select("*")
+        .eq("school_id", schoolId)
+        .order("last_name", { ascending: true })
+        .order("first_name", { ascending: true }),
+      supabase
+        .from("student_fees")
+        .select("student_id, amount_fcfa, discount_fcfa, fee_structures!inner(kind)")
+        .eq("school_id", schoolId)
+        .eq("fee_structures.kind", "registration"),
+      supabase
+        .from("payments")
+        .select("student_id, amount_fcfa")
+        .eq("school_id", schoolId),
+    ]);
+    if (studentsRes.error) throw studentsRes.error;
 
-    if (error) throw error;
-    return data ?? [];
+    const regBilled = new Map<string, number>();
+    for (const r of regFeesRes.data ?? []) {
+      const sid = (r as { student_id: string }).student_id;
+      const amt = Math.max(Number(r.amount_fcfa ?? 0) - Number(r.discount_fcfa ?? 0), 0);
+      regBilled.set(sid, (regBilled.get(sid) ?? 0) + amt);
+    }
+    const paid = new Map<string, number>();
+    for (const p of paysRes.data ?? []) {
+      paid.set(p.student_id, (paid.get(p.student_id) ?? 0) + Number(p.amount_fcfa ?? 0));
+    }
+    return (studentsRes.data ?? []).map((s) => {
+      const billed = regBilled.get(s.id) ?? 0;
+      const covered = Math.min(paid.get(s.id) ?? 0, billed);
+      return { ...s, registration_owed: Math.max(billed - covered, 0), registration_billed: billed };
+    });
   });
 
 const studentByIdSchema = z.object({ id: z.string().uuid() });
@@ -39,7 +64,54 @@ export const getStudentById = createServerFn({ method: "GET" })
       .single();
 
     if (error) throw error;
-    return student;
+
+    // Live attendance counts + registration status
+    const [attRes, regRes, paysAgg, feesAgg] = await Promise.all([
+      supabase
+        .from("attendance")
+        .select("status")
+        .eq("school_id", schoolId)
+        .eq("student_id", data.id),
+      supabase
+        .from("student_fees")
+        .select("amount_fcfa, discount_fcfa, fee_structures!inner(kind)")
+        .eq("school_id", schoolId)
+        .eq("student_id", data.id)
+        .eq("fee_structures.kind", "registration"),
+      supabase
+        .from("payments")
+        .select("amount_fcfa")
+        .eq("school_id", schoolId)
+        .eq("student_id", data.id),
+      supabase
+        .from("student_fees")
+        .select("amount_fcfa, discount_fcfa")
+        .eq("school_id", schoolId)
+        .eq("student_id", data.id),
+    ]);
+    const att = attRes.data ?? [];
+    const present = att.filter((a) => a.status === "present").length;
+    const absent = att.filter((a) => a.status === "absent").length;
+    const late = att.filter((a) => a.status === "late").length;
+    const excused = att.filter((a) => a.status === "excused").length;
+    const regBilled = (regRes.data ?? []).reduce(
+      (s, r) => s + Math.max(Number(r.amount_fcfa ?? 0) - Number(r.discount_fcfa ?? 0), 0),
+      0,
+    );
+    const totalBilled = (feesAgg.data ?? []).reduce(
+      (s, r) => s + Math.max(Number(r.amount_fcfa ?? 0) - Number(r.discount_fcfa ?? 0), 0),
+      0,
+    );
+    const totalPaid = (paysAgg.data ?? []).reduce((s, p) => s + Number(p.amount_fcfa ?? 0), 0);
+    const regCovered = Math.min(totalPaid, regBilled);
+    return {
+      ...student,
+      attendance_counts: { present, absent, late, excused, total: att.length },
+      registration_billed: regBilled,
+      registration_owed: Math.max(regBilled - regCovered, 0),
+      total_billed: totalBilled,
+      total_paid: totalPaid,
+    };
   });
 
 const createStudentSchema = z.object({
