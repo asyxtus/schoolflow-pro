@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useClassOptions } from "@/hooks/use-classes";
 import {
   getApplicants,
   updateApplicantStage,
@@ -219,6 +220,7 @@ function AdmitDialog({
   const qc = useQueryClient();
   const [matricule, setMatricule] = useState("");
   const [className, setClassName] = useState("");
+  const { data: classes } = useClassOptions();
 
   const mutation = useMutation({
     mutationFn: (input: { id: string; matricule: string; className?: string }) =>
@@ -259,14 +261,20 @@ function AdmitDialog({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Class</Label>
-            <Input
-              value={className}
-              onChange={(e) => setClassName(e.target.value)}
-              placeholder={applicant?.class_applied_for ?? "Form 1"}
-            />
+            <Select value={className || (applicant?.class_applied_for ?? "")} onValueChange={setClassName}>
+              <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
+              <SelectContent>
+                {(classes ?? []).map((c) => (
+                  <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <p className="text-xs text-muted-foreground">
-              Defaults to "{applicant?.class_applied_for}" if left blank.
+              Applied for: <span className="font-medium">{applicant?.class_applied_for ?? "—"}</span>
             </p>
+          </div>
+          <div className="rounded-md border border-amber-300/40 bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+            Admission will auto-generate invoices from the class fee structures (registration + tuition installments). Registration must be paid before the student is considered fully enrolled — the student profile will flag it until settled.
           </div>
         </div>
         <DialogFooter>
