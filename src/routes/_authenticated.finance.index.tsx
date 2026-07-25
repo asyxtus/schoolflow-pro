@@ -231,11 +231,18 @@ function FinancePage() {
                         <Button
                           size="icon" variant="ghost"
                           onClick={async () => {
-                            await delPay({ data: { id: p.id } });
-                            refetchAll();
-                            qc.invalidateQueries({ queryKey: ["payments"] });
+                            const reason = window.prompt("Reason for voiding this payment (audit-logged)?");
+                            if (!reason || reason.trim().length < 4) return;
+                            try {
+                              await voidPay({ data: { id: p.id, reason: reason.trim() } });
+                              refetchAll();
+                              qc.invalidateQueries({ queryKey: ["payments"] });
+                              toast.success("Payment voided");
+                            } catch (e) {
+                              toast.error((e as Error).message);
+                            }
                           }}
-                          aria-label="Delete"
+                          aria-label="Void"
                         >
                           <Trash2 className="h-4 w-4 text-muted-foreground" />
                         </Button>
