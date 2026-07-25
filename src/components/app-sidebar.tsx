@@ -25,6 +25,8 @@ import {
   BarChart3,
   TrendingDown,
   AlertTriangle,
+  Lock,
+  UserCheck,
 } from "lucide-react";
 
 import {
@@ -72,12 +74,15 @@ const groups = [
     items: [
       { title: "Finance", url: "/finance", icon: Wallet },
       { title: "Fees aging", url: "/finance/aging", icon: AlertTriangle },
+      { title: "Daily cash close", url: "/day-close", icon: Lock },
       { title: "Expenses", url: "/expenses", icon: TrendingDown },
       { title: "Student Wallet", url: "/wallet", icon: PiggyBank },
       { title: "Boarding", url: "/boarding", icon: BedDouble },
       { title: "Transport", url: "/transport", icon: Bus },
       { title: "Library", url: "/library", icon: Library },
       { title: "HR / Staff", url: "/hr", icon: Briefcase },
+      { title: "Staff attendance", url: "/staff-attendance", icon: UserCheck },
+      { title: "Teacher performance", url: "/teacher-performance", icon: BarChart3 },
       { title: "Payroll", url: "/payroll", icon: Banknote },
     ],
   },
