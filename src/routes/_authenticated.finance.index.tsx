@@ -26,7 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { getStudents } from "@/lib/students.functions";
 import {
   financeSummary, listFeeStructures, upsertFeeStructure, deleteFeeStructure,
-  listPayments, recordPayment, deletePayment, type PaymentMethod,
+  listPayments, recordPayment, voidPayment, type PaymentMethod,
   type FeeKind, type FeeInstallment,
   listStudentFees, upsertStudentFee, deleteStudentFee, bulkAssignFee,
   recomputeAllBalances,
@@ -50,7 +50,7 @@ function FinancePage() {
   const delFee = useServerFn(deleteFeeStructure);
   const paysFn = useServerFn(listPayments);
   const recFn = useServerFn(recordPayment);
-  const delPay = useServerFn(deletePayment);
+  const voidPay = useServerFn(voidPayment);
   const studentsFn = useServerFn(getStudents);
   const invFn = useServerFn(listStudentFees);
   const upsertInv = useServerFn(upsertStudentFee);
@@ -214,6 +214,9 @@ function FinancePage() {
                           <div className="font-medium">
                             {s?.first_name} {s?.last_name}
                             <span className="ml-2 text-xs text-muted-foreground">{s?.matricule} · {s?.class_name}</span>
+                            {(p as { voided?: boolean }).voided && (
+                              <Badge variant="destructive" className="ml-2">VOIDED</Badge>
+                            )}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {p.receipt_no && <span className="mr-2 font-mono">{p.receipt_no}</span>}
@@ -221,24 +224,34 @@ function FinancePage() {
                             {p.reference && ` · Ref ${p.reference}`}
                           </div>
                           {p.note && <div className="mt-1 text-sm text-foreground/80">{p.note}</div>}
+                          {(p as { voided?: boolean; void_reason?: string | null }).voided && (p as { void_reason?: string | null }).void_reason && (
+                            <div className="mt-1 text-xs text-destructive">Void reason: {(p as { void_reason?: string | null }).void_reason}</div>
+                          )}
                         </div>
                         <div className="text-right">
-                          <div className="font-semibold text-primary">{fmt(p.amount_fcfa)}</div>
+                          <div className={`font-semibold ${(p as { voided?: boolean }).voided ? "text-muted-foreground line-through" : "text-primary"}`}>{fmt(p.amount_fcfa)}</div>
                         </div>
                         <Button size="icon" variant="ghost" aria-label="Receipt" onClick={() => openReceipt(p.id)}>
                           <Printer className="h-4 w-4 text-muted-foreground" />
                         </Button>
-                        <Button
+                        {!(p as { voided?: boolean }).voided && <Button
                           size="icon" variant="ghost"
                           onClick={async () => {
-                            await delPay({ data: { id: p.id } });
-                            refetchAll();
-                            qc.invalidateQueries({ queryKey: ["payments"] });
+                            const reason = window.prompt("Reason for voiding this payment (audit-logged)?");
+                            if (!reason || reason.trim().length < 4) return;
+                            try {
+                              await voidPay({ data: { id: p.id, reason: reason.trim() } });
+                              refetchAll();
+                              qc.invalidateQueries({ queryKey: ["payments"] });
+                              toast.success("Payment voided");
+                            } catch (e) {
+                              toast.error((e as Error).message);
+                            }
                           }}
-                          aria-label="Delete"
+                          aria-label="Void"
                         >
                           <Trash2 className="h-4 w-4 text-muted-foreground" />
-                        </Button>
+                        </Button>}
                       </div>
                     );
                   })}
