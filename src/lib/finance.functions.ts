@@ -93,7 +93,7 @@ export const listPayments = createServerFn({ method: "GET" })
     if (!schoolId) return [];
     let q = supabase
       .from("payments")
-      .select("id, student_id, amount_fcfa, method, reference, note, paid_at, receipt_no, students(first_name,last_name,matricule,class_name)")
+      .select("id, student_id, amount_fcfa, method, reference, note, paid_at, receipt_no, voided, void_reason, students(first_name,last_name,matricule,class_name)")
       .eq("school_id", schoolId)
       .order("paid_at", { ascending: false })
       .limit(data.limit ?? 200);
