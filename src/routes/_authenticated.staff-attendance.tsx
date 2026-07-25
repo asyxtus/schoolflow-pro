@@ -40,7 +40,7 @@ function StaffAttendancePage() {
 
   return (
     <div className="mx-auto w-full max-w-4xl px-3 sm:px-6 py-6 space-y-5">
-      <PageHeader icon={UserCheck} title="Staff attendance" subtitle="Daily clock-in register — only HR managers can record." />
+      <PageHeader title="Staff attendance" description="Daily clock-in register — only HR managers can record." />
       <div className="flex items-end gap-3">
         <div>
           <Label className="text-xs">Date</Label>

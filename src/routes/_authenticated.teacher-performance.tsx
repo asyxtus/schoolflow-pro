@@ -26,7 +26,7 @@ function TeacherPerformancePage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-8 space-y-5">
-      <PageHeader icon={TrendingUp} title="Teacher performance" subtitle="Attendance-taking, grade timeliness, class average and own punctuality." />
+      <PageHeader title="Teacher performance" description="Attendance-taking, grade timeliness, class average and own punctuality." />
       <div className="flex items-end gap-3">
         <div>
           <div className="text-xs text-muted-foreground">Window</div>

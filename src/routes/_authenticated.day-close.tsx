@@ -53,7 +53,7 @@ function DayClosePage() {
 
   return (
     <div className="mx-auto w-full max-w-4xl px-6 py-8 space-y-6">
-      <PageHeader icon={Wallet} title="Daily cash close" subtitle="End-of-day reconciliation — locks that day's payments once closed." />
+      <PageHeader title="Daily cash close" description="End-of-day reconciliation — locks that day's payments once closed." />
 
       <div className="flex items-end gap-3">
         <div>
