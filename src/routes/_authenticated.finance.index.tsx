@@ -26,7 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { getStudents } from "@/lib/students.functions";
 import {
   financeSummary, listFeeStructures, upsertFeeStructure, deleteFeeStructure,
-  listPayments, recordPayment, deletePayment, type PaymentMethod,
+  listPayments, recordPayment, voidPayment, type PaymentMethod,
   type FeeKind, type FeeInstallment,
   listStudentFees, upsertStudentFee, deleteStudentFee, bulkAssignFee,
   recomputeAllBalances,
@@ -50,7 +50,7 @@ function FinancePage() {
   const delFee = useServerFn(deleteFeeStructure);
   const paysFn = useServerFn(listPayments);
   const recFn = useServerFn(recordPayment);
-  const delPay = useServerFn(deletePayment);
+  const voidPay = useServerFn(voidPayment);
   const studentsFn = useServerFn(getStudents);
   const invFn = useServerFn(listStudentFees);
   const upsertInv = useServerFn(upsertStudentFee);
