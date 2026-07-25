@@ -119,6 +119,11 @@ export const recordPayment = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) throw new Error("No school assigned");
+    // Anti-fraud: require external reference for non-cash payments
+    if (["momo", "bank", "cheque"].includes(data.method) && !(data.reference && data.reference.trim())) {
+      throw new Error("A reference (transaction ID, cheque #, deposit slip) is required for non-cash payments.");
+    }
+    if (!(data.amount_fcfa > 0)) throw new Error("Amount must be greater than zero.");
     const { data: inserted, error } = await supabase.from("payments").insert({
       school_id: schoolId,
       student_id: data.student_id,
@@ -137,8 +142,127 @@ export const deletePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase.from("payments").delete().eq("id", data.id);
+    // Hard-delete is disabled to preserve the audit trail. Use voidPayment instead.
+    void data;
+    void context;
+    throw new Error("Payments cannot be deleted. Void the payment instead (an auditable action).");
+  });
+
+// Void a payment: reversible only by re-recording. Requires a reason.
+export const voidPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; reason: string }) => d)
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    if (!data.reason || data.reason.trim().length < 4) throw new Error("A reason (≥ 4 chars) is required to void a payment.");
+    const { data: existing, error: fErr } = await supabase
+      .from("payments").select("id, voided, school_id, student_id, amount_fcfa, receipt_no").eq("id", data.id).single();
+    if (fErr) throw new Error(fErr.message);
+    if (existing.voided) throw new Error("This payment is already voided.");
+    const { error } = await supabase
+      .from("payments")
+      .update({ voided: true, voided_at: new Date().toISOString(), voided_by: userId, void_reason: data.reason.trim() })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
+    await supabase.rpc("log_audit", {
+      _school_id: existing.school_id,
+      _action: "void_payment",
+      _entity_type: "payment",
+      _entity_id: data.id,
+      _summary: `Voided receipt ${existing.receipt_no ?? data.id} for ${existing.amount_fcfa} FCFA — ${data.reason.trim()}`,
+    });
+    return { ok: true };
+  });
+
+// ─── Daily cash close ──────────────────────────────────────────────────────
+
+export const dayReconciliation = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { date: string }) => d)
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) throw new Error("No school");
+    const start = `${data.date}T00:00:00.000Z`;
+    const end = `${data.date}T23:59:59.999Z`;
+    const { data: pays } = await supabase
+      .from("payments")
+      .select("amount_fcfa, method, voided, receipt_no, students(first_name,last_name,class_name)")
+      .eq("school_id", schoolId)
+      .gte("paid_at", start).lte("paid_at", end);
+    const totals = { cash: 0, momo: 0, bank: 0, cheque: 0, other: 0, count: 0, voided: 0 };
+    for (const p of pays ?? []) {
+      if (p.voided) { totals.voided += 1; continue; }
+      totals.count += 1;
+      const m = p.method as keyof typeof totals;
+      if (m in totals) (totals[m] as number) += p.amount_fcfa ?? 0;
+    }
+    const { data: closure } = await supabase
+      .from("cash_closures").select("*").eq("school_id", schoolId).eq("close_date", data.date).maybeSingle();
+    return { totals, closure, payments: pays ?? [] };
+  });
+
+export const closeDay = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { date: string; counted_cash?: number; notes?: string }) => d)
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) throw new Error("No school");
+    const { data: canClose } = await supabase.rpc("can_record_payments" as never, { _user_id: userId, _school_id: schoolId } as never);
+    if (!canClose) throw new Error("Only the Bursar or Principal can close the day.");
+    const start = `${data.date}T00:00:00.000Z`;
+    const end = `${data.date}T23:59:59.999Z`;
+    const { data: pays } = await supabase
+      .from("payments").select("amount_fcfa, method, voided")
+      .eq("school_id", schoolId).gte("paid_at", start).lte("paid_at", end);
+    const t = { cash: 0, momo: 0, bank: 0, cheque: 0, other: 0 };
+    for (const p of pays ?? []) {
+      if (p.voided) continue;
+      const m = p.method as keyof typeof t;
+      if (m in t) t[m] += p.amount_fcfa ?? 0;
+    }
+    const counted = data.counted_cash ?? t.cash;
+    const variance = counted - t.cash;
+    const { error } = await supabase.from("cash_closures").upsert({
+      school_id: schoolId, close_date: data.date, closed_by: userId,
+      cash_total: t.cash, momo_total: t.momo, bank_total: t.bank, cheque_total: t.cheque, other_total: t.other,
+      expected_cash: counted, cash_variance: variance, notes: data.notes ?? null,
+      closed_at: new Date().toISOString(),
+    }, { onConflict: "school_id,close_date" });
+    if (error) throw new Error(error.message);
+    await supabase.rpc("log_audit", {
+      _school_id: schoolId,
+      _action: "close_day",
+      _entity_type: "cash_closure",
+      _entity_id: data.date,
+      _summary: `Closed ${data.date}: cash ${t.cash}, momo ${t.momo}, bank ${t.bank}, cheque ${t.cheque}, variance ${variance}`,
+    });
+    return { ok: true, totals: t, variance };
+  });
+
+export const reopenDay = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { date: string; reason: string }) => d)
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) throw new Error("No school");
+    const { data: isPrincipal } = await supabase.rpc("has_role_in_school", {
+      _user_id: userId, _school_id: schoolId, _role: "principal",
+    });
+    if (!isPrincipal) throw new Error("Only the Principal can re-open a closed day.");
+    if (!data.reason || data.reason.trim().length < 4) throw new Error("A reason is required.");
+    const { error } = await supabase.from("cash_closures")
+      .delete().eq("school_id", schoolId).eq("close_date", data.date);
+    if (error) throw new Error(error.message);
+    await supabase.rpc("log_audit", {
+      _school_id: schoolId,
+      _action: "reopen_day",
+      _entity_type: "cash_closure",
+      _entity_id: data.date,
+      _summary: `Re-opened ${data.date} — ${data.reason.trim()}`,
+    });
     return { ok: true };
   });
 
