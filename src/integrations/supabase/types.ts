@@ -550,6 +550,62 @@ export type Database = {
           },
         ]
       }
+      cash_closures: {
+        Row: {
+          bank_total: number
+          cash_total: number
+          cash_variance: number | null
+          cheque_total: number
+          close_date: string
+          closed_at: string
+          closed_by: string
+          expected_cash: number | null
+          id: string
+          momo_total: number
+          notes: string | null
+          other_total: number
+          school_id: string
+        }
+        Insert: {
+          bank_total?: number
+          cash_total?: number
+          cash_variance?: number | null
+          cheque_total?: number
+          close_date: string
+          closed_at?: string
+          closed_by: string
+          expected_cash?: number | null
+          id?: string
+          momo_total?: number
+          notes?: string | null
+          other_total?: number
+          school_id: string
+        }
+        Update: {
+          bank_total?: number
+          cash_total?: number
+          cash_variance?: number | null
+          cheque_total?: number
+          close_date?: string
+          closed_at?: string
+          closed_by?: string
+          expected_cash?: number | null
+          id?: string
+          momo_total?: number
+          notes?: string | null
+          other_total?: number
+          school_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_closures_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_subjects: {
         Row: {
           class_id: string
@@ -1395,6 +1451,10 @@ export type Database = {
           reference: string | null
           school_id: string
           student_id: string
+          void_reason: string | null
+          voided: boolean
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           amount_fcfa: number
@@ -1408,6 +1468,10 @@ export type Database = {
           reference?: string | null
           school_id: string
           student_id: string
+          void_reason?: string | null
+          voided?: boolean
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           amount_fcfa?: number
@@ -1421,6 +1485,10 @@ export type Database = {
           reference?: string | null
           school_id?: string
           student_id?: string
+          void_reason?: string | null
+          voided?: boolean
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -1872,6 +1940,63 @@ export type Database = {
           },
           {
             foreignKeyName: "staff_allowances_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_attendance: {
+        Row: {
+          clock_in: string | null
+          clock_out: string | null
+          created_at: string
+          id: string
+          note: string | null
+          recorded_by: string | null
+          school_id: string
+          staff_id: string
+          status: string
+          updated_at: string
+          work_date: string
+        }
+        Insert: {
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          recorded_by?: string | null
+          school_id: string
+          staff_id: string
+          status?: string
+          updated_at?: string
+          work_date: string
+        }
+        Update: {
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          recorded_by?: string | null
+          school_id?: string
+          staff_id?: string
+          status?: string
+          updated_at?: string
+          work_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_attendance_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_attendance_staff_id_fkey"
             columns: ["staff_id"]
             isOneToOne: false
             referencedRelation: "staff"
@@ -2681,6 +2806,10 @@ export type Database = {
         Returns: boolean
       }
       can_manage_school_data: {
+        Args: { _school_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_record_payments: {
         Args: { _school_id: string; _user_id: string }
         Returns: boolean
       }
