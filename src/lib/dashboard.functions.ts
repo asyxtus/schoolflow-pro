@@ -28,6 +28,7 @@ export const getDashboardStats = createServerFn({ method: "GET" })
         .from("payments")
         .select("amount_fcfa, method")
         .eq("school_id", schoolId)
+        .eq("voided", false)
         .gte("paid_at", startToday)
         .lte("paid_at", endToday),
       supabase
@@ -61,6 +62,7 @@ export const getDashboardStats = createServerFn({ method: "GET" })
         .from("payments")
         .select("id, amount_fcfa, method, paid_at, receipt_no, students(first_name,last_name,class_name)")
         .eq("school_id", schoolId)
+        .eq("voided", false)
         .order("paid_at", { ascending: false })
         .limit(8),
       supabase
