@@ -72,7 +72,7 @@ export const listFeesAging = createServerFn({ method: "GET" })
 
     const totals = { current: 0, "1_7": 0, "8_30": 0, "31_60": 0, "60_plus": 0, total: 0 };
     const rows: Row[] = (students ?? [])
-      .map((s) => {
+      .map((s): Row | null => {
         const g = (s.guardians as { full_name?: string; phone?: string; relationship?: string }[] | null)?.[0];
         const e = perStudent.get(s.id);
         if (!e || e.total <= 0) return null;
@@ -95,9 +95,9 @@ export const listFeesAging = createServerFn({ method: "GET" })
           earliest_due: e.earliest,
           days_overdue: Math.max(e.days, 0),
           bucket: worst,
-        } satisfies Row;
+        };
       })
-      .filter((r): r is Row => r !== null)
+      .filter((r) => r !== null)
       .sort((a, b) => b.fee_balance - a.fee_balance);
 
     let filtered = rows;
