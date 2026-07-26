@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getUserSchoolId } from "./school-context";
+import { openInvoicesFor, invoicesFor, allocateOldestFirst, studentCredit } from "./fee-allocation";
 
 export type PaymentMethod = "cash" | "momo" | "bank" | "cheque" | "other";
 export type FeeKind = "registration" | "tuition" | "other";
