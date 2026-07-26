@@ -1438,6 +1438,55 @@ export type Database = {
           },
         ]
       }
+      payment_allocations: {
+        Row: {
+          amount_fcfa: number
+          created_at: string
+          id: string
+          payment_id: string
+          school_id: string
+          student_fee_id: string
+        }
+        Insert: {
+          amount_fcfa: number
+          created_at?: string
+          id?: string
+          payment_id: string
+          school_id: string
+          student_fee_id: string
+        }
+        Update: {
+          amount_fcfa?: number
+          created_at?: string
+          id?: string
+          payment_id?: string
+          school_id?: string
+          student_fee_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocations_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_student_fee_id_fkey"
+            columns: ["student_fee_id"]
+            isOneToOne: false
+            referencedRelation: "student_fee_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_student_fee_id_fkey"
+            columns: ["student_fee_id"]
+            isOneToOne: false
+            referencedRelation: "student_fees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount_fcfa: number
@@ -2798,7 +2847,49 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      student_fee_status: {
+        Row: {
+          academic_year: string | null
+          amount_fcfa: number | null
+          balance_fcfa: number | null
+          created_at: string | null
+          discount_fcfa: number | null
+          due_date: string | null
+          fee_structure_id: string | null
+          id: string | null
+          kind: string | null
+          label: string | null
+          net_fcfa: number | null
+          note: string | null
+          paid_fcfa: number | null
+          school_id: string | null
+          status: string | null
+          student_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_fees_fee_structure_id_fkey"
+            columns: ["fee_structure_id"]
+            isOneToOne: false
+            referencedRelation: "fee_structures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_fees_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_fees_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       can_manage_hr: {
@@ -2864,6 +2955,7 @@ export type Database = {
         Returns: undefined
       }
       registration_owed: { Args: { _student_id: string }; Returns: number }
+      student_credit: { Args: { _student_id: string }; Returns: number }
     }
     Enums: {
       admission_stage:

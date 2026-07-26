@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -29,7 +29,7 @@ import {
   listPayments, recordPayment, voidPayment, type PaymentMethod,
   type FeeKind, type FeeInstallment,
   listStudentFees, upsertStudentFee, deleteStudentFee, bulkAssignFee,
-  recomputeAllBalances,
+  recomputeAllBalances, getStudentBilling,
 } from "@/lib/finance.functions";
 import { useClassOptions } from "@/hooks/use-classes";
 
@@ -191,7 +191,7 @@ function FinancePage() {
                 const res = await recFn({ data: v });
                 refetchAll();
                 qc.invalidateQueries({ queryKey: ["payments"] });
-                toast.success("Payment recorded", {
+                toast.success(res?.credit ? `Payment recorded · ${fmt(res.credit)} kept as credit` : "Payment recorded", {
                   action: res?.id ? { label: "Print receipt", onClick: () => openReceipt(res.id!) } : undefined,
                 });
               }}
@@ -291,8 +291,10 @@ function FinancePage() {
             <Card><CardContent className="p-0"><div className="divide-y">
               {invQ.data.map((r) => {
                 const s = (r as { students?: { first_name?: string; last_name?: string; matricule?: string; class_name?: string } }).students;
-                const net = Math.max(0, r.amount_fcfa - (r.discount_fcfa ?? 0));
-                const overdue = r.due_date && new Date(r.due_date) < new Date();
+                const net = Number(r.net_fcfa ?? 0);
+                const paid = Number(r.paid_fcfa ?? 0);
+                const balance = Number(r.balance_fcfa ?? 0);
+                const status = (r.status ?? "unpaid") as "paid" | "partial" | "overdue" | "unpaid";
                 return (
                   <div key={r.id} className="flex items-center gap-3 p-4">
                     <FileText className="h-4 w-4 text-muted-foreground" />
@@ -307,13 +309,20 @@ function FinancePage() {
                         {r.due_date && ` · Due ${new Date(r.due_date).toLocaleDateString()}`}
                       </div>
                     </div>
-                    {overdue && <Badge variant="destructive">Overdue</Badge>}
+                    <Badge variant={status === "paid" ? "secondary" : status === "overdue" ? "destructive" : "outline"}>
+                      {status === "paid" ? "Paid" : status === "partial" ? "Partly paid" : status === "overdue" ? "Overdue" : "Unpaid"}
+                    </Badge>
                     <div className="text-right">
-                      <div className="font-semibold">{fmt(net)}</div>
-                      {r.discount_fcfa > 0 && <div className="text-xs text-muted-foreground">-{fmt(r.discount_fcfa)} discount</div>}
+                      <div className="font-semibold">{fmt(balance)}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {paid > 0 ? `${fmt(paid)} paid of ${fmt(net)}` : `of ${fmt(net)}`}
+                        {Number(r.discount_fcfa ?? 0) > 0 && ` · -${fmt(Number(r.discount_fcfa))} discount`}
+                      </div>
                     </div>
                     <Button size="icon" variant="ghost" aria-label="Delete"
-                      onClick={async () => { await delInv({ data: { id: r.id } }); refetchAll(); }}>
+                      disabled={paid > 0}
+                      title={paid > 0 ? "This invoice has payments applied to it and cannot be deleted" : "Delete invoice"}
+                      onClick={async () => { await delInv({ data: { id: r.id as string } }); refetchAll(); }}>
                       <Trash2 className="h-4 w-4 text-muted-foreground" />
                     </Button>
                   </div>
@@ -403,52 +412,86 @@ function FinancePage() {
 
 function RecordPaymentDialog({
   students, onSubmit,
-}: { students: Array<{ id: string; first_name: string; last_name: string; matricule: string | null; class_name: string | null; fee_balance: number }>; onSubmit: (v: { student_id: string; amount_fcfa: number; method: PaymentMethod; reference?: string; note?: string }) => Promise<void> }) {
+}: {
+  students: Array<{ id: string; first_name: string; last_name: string; matricule: string | null; class_name: string | null; fee_balance: number }>;
+  onSubmit: (v: {
+    student_id: string; amount_fcfa: number; method: PaymentMethod; reference?: string; note?: string;
+    allocations?: { student_fee_id: string; amount_fcfa: number }[];
+  }) => Promise<void>;
+}) {
   const [open, setOpen] = useState(false);
   const [studentId, setStudentId] = useState("");
   const [amount, setAmount] = useState("");
-  const [amountTouched, setAmountTouched] = useState(false);
-  const [selectedFees, setSelectedFees] = useState<Record<string, boolean>>({});
+  const [allocs, setAllocs] = useState<Record<string, string>>({});
+  const [manual, setManual] = useState(false);
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [reference, setReference] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const invFn = useServerFn(listStudentFees);
-  const feesQ = useQuery({
-    queryKey: ["student-fees", studentId],
-    queryFn: () => invFn({ data: { studentId } }),
+  const billingFn = useServerFn(getStudentBilling);
+  const billingQ = useQuery({
+    queryKey: ["student-billing", studentId],
+    queryFn: () => billingFn({ data: { studentId } }),
     enabled: !!studentId,
   });
-  const invoices = (feesQ.data ?? []) as Array<{ id: string; label: string; amount_fcfa: number; discount_fcfa: number | null; due_date: string | null }>;
-  const selectedTotal = invoices.reduce((s, i) => s + (selectedFees[i.id] ? Math.max((i.amount_fcfa ?? 0) - (i.discount_fcfa ?? 0), 0) : 0), 0);
-  const effectiveAmount = amountTouched ? amount : (selectedTotal > 0 ? String(selectedTotal) : amount);
+  const open_ = billingQ.data?.open ?? [];
+  const credit = billingQ.data?.credit ?? 0;
+  const outstanding = billingQ.data?.outstanding ?? 0;
+
+  const amt = Number(amount) || 0;
+
+  // Auto-allocate oldest-due-first until the bursar overrides an amount.
+  useEffect(() => {
+    if (manual || open_.length === 0) return;
+    let remaining = amt;
+    const next: Record<string, string> = {};
+    for (const inv of open_) {
+      const take = Math.max(Math.min(remaining, inv.balance_fcfa), 0);
+      next[inv.id] = take > 0 ? String(take) : "";
+      remaining -= take;
+    }
+    setAllocs(next);
+  }, [amt, manual, billingQ.data]);
+
+  const allocatedTotal = open_.reduce((s, i) => s + (Number(allocs[i.id]) || 0), 0);
+  const unallocated = Math.max(amt - allocatedTotal, 0);
+  const overAllocated = allocatedTotal > amt;
+
+  const reset = () => {
+    setStudentId(""); setAmount(""); setAllocs({}); setManual(false);
+    setReference(""); setNote(""); setMethod("cash");
+  };
 
   const submit = async () => {
-    const amt = Number(effectiveAmount);
-    if (!studentId || !amt || amt <= 0) { toast.error("Pick a student and amount"); return; }
-    const picked = invoices.filter((i) => selectedFees[i.id]);
-    const autoNote = picked.length > 0 ? `Applied to: ${picked.map((p) => p.label).join("; ")}` : "";
-    const finalNote = [autoNote, note].filter(Boolean).join(" · ") || undefined;
+    if (!studentId || amt <= 0) { toast.error("Pick a student and an amount"); return; }
+    if (overAllocated) { toast.error("Allocations exceed the amount received"); return; }
+    const allocations = open_
+      .map((i) => ({ student_fee_id: i.id, amount_fcfa: Number(allocs[i.id]) || 0 }))
+      .filter((a) => a.amount_fcfa > 0);
     setBusy(true);
     try {
-      await onSubmit({ student_id: studentId, amount_fcfa: amt, method, reference: reference || undefined, note: finalNote });
-      setOpen(false); setStudentId(""); setAmount(""); setAmountTouched(false); setSelectedFees({}); setReference(""); setNote(""); setMethod("cash");
+      await onSubmit({
+        student_id: studentId, amount_fcfa: amt, method,
+        reference: reference || undefined, note: note || undefined,
+        allocations: allocations.length > 0 ? allocations : undefined,
+      });
+      setOpen(false); reset();
     } catch (e) { toast.error((e as Error).message); }
     finally { setBusy(false); }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
       <DialogTrigger asChild>
         <Button><Plus className="mr-2 h-4 w-4" />Record payment</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Record payment</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid gap-1.5">
             <Label>Student</Label>
-            <Select value={studentId} onValueChange={(v) => { setStudentId(v); setSelectedFees({}); setAmountTouched(false); setAmount(""); }}>
+            <Select value={studentId} onValueChange={(v) => { setStudentId(v); setAllocs({}); setManual(false); setAmount(""); }}>
               <SelectTrigger><SelectValue placeholder="Select student" /></SelectTrigger>
               <SelectContent>
                 {students.map((s) => (
@@ -459,45 +502,12 @@ function RecordPaymentDialog({
               </SelectContent>
             </Select>
           </div>
-          {studentId && (
-            <div className="rounded-md border border-border bg-muted/30 p-3">
-              <div className="text-xs text-muted-foreground mb-2">
-                {feesQ.isLoading ? "Loading invoices…" : invoices.length === 0 ? "No open invoices for this student" : "Select the fees being paid"}
-              </div>
-              {invoices.length > 0 && (
-                <>
-                  <div className="space-y-1.5 text-sm max-h-48 overflow-y-auto">
-                    {invoices.map((i) => {
-                      const due = Math.max((i.amount_fcfa ?? 0) - (i.discount_fcfa ?? 0), 0);
-                      return (
-                        <label key={i.id} className="flex items-center justify-between gap-3 cursor-pointer rounded px-1 py-0.5 hover:bg-muted/60">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Checkbox
-                              checked={!!selectedFees[i.id]}
-                              onCheckedChange={(v) => setSelectedFees((s) => ({ ...s, [i.id]: !!v }))}
-                            />
-                            <span className="truncate">
-                              {i.label}
-                              {i.due_date && <span className="text-xs text-muted-foreground"> · Due {new Date(i.due_date).toLocaleDateString()}</span>}
-                            </span>
-                          </div>
-                          <span className="font-medium whitespace-nowrap">{fmt(due)}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                  <div className="mt-2 border-t border-border pt-2 flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Selected total</span>
-                    <span className="font-semibold">{fmt(selectedTotal)}</span>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
-              <Label>Amount (FCFA)</Label>
-              <Input type="number" min="0" value={effectiveAmount} onChange={(e) => { setAmount(e.target.value); setAmountTouched(true); }} />
+              <Label>Amount received (FCFA)</Label>
+              <Input type="number" min="0" value={amount}
+                onChange={(e) => { setAmount(e.target.value); setManual(false); }} />
             </div>
             <div className="grid gap-1.5">
               <Label>Method</Label>
@@ -513,9 +523,68 @@ function RecordPaymentDialog({
               </Select>
             </div>
           </div>
+
+          {studentId && (
+            <div className="rounded-md border border-border bg-muted/30 p-3">
+              <div className="mb-2 flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">
+                  {billingQ.isLoading ? "Loading invoices…" : open_.length === 0 ? "No open invoices" : "Applied to (oldest due first — you can adjust)"}
+                </span>
+                <span className="text-muted-foreground">Owing {fmt(outstanding)}</span>
+              </div>
+              {credit > 0 && (
+                <div className="mb-2 rounded bg-primary/10 px-2 py-1 text-xs text-primary">
+                  {fmt(credit)} credit already on this student's account
+                </div>
+              )}
+              {open_.length > 0 && (
+                <>
+                  <div className="max-h-56 space-y-1.5 overflow-y-auto text-sm">
+                    {open_.map((i) => (
+                      <div key={i.id} className="flex items-center justify-between gap-2 rounded px-1 py-0.5">
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate">
+                            {i.label}
+                            {i.kind === "registration" && <Badge variant="outline" className="ml-2">Registration</Badge>}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Balance {fmt(i.balance_fcfa)}
+                            {i.due_date && ` · Due ${new Date(i.due_date).toLocaleDateString()}`}
+                            {i.paid_fcfa > 0 && ` · ${fmt(i.paid_fcfa)} already paid`}
+                          </div>
+                        </div>
+                        <Input
+                          type="number" min="0" max={i.balance_fcfa}
+                          className="h-8 w-32"
+                          value={allocs[i.id] ?? ""}
+                          onChange={(e) => { setManual(true); setAllocs((s) => ({ ...s, [i.id]: e.target.value })); }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 space-y-1 border-t border-border pt-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Applied to invoices</span>
+                      <span className={overAllocated ? "font-semibold text-destructive" : "font-semibold"}>{fmt(allocatedTotal)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Kept as credit</span>
+                      <span className="font-semibold">{fmt(unallocated)}</span>
+                    </div>
+                    {overAllocated && <p className="text-xs text-destructive">Allocations exceed the amount received.</p>}
+                    {manual && (
+                      <button type="button" className="text-xs text-primary underline"
+                        onClick={() => setManual(false)}>Reset to automatic allocation</button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           <div className="grid gap-1.5">
-            <Label>Reference (optional)</Label>
-            <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="MoMo txn ID, receipt no." />
+            <Label>Reference {["momo", "bank", "cheque"].includes(method) ? "(required)" : "(optional)"}</Label>
+            <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="MoMo txn ID, cheque no., deposit slip" />
           </div>
           <div className="grid gap-1.5">
             <Label>Note (optional)</Label>
@@ -524,7 +593,7 @@ function RecordPaymentDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={submit} disabled={busy}>{busy ? "Saving…" : "Record"}</Button>
+          <Button onClick={submit} disabled={busy || overAllocated}>{busy ? "Saving…" : "Record"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

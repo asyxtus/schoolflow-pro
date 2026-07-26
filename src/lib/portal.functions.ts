@@ -86,12 +86,12 @@ export const getPortalBundle = createServerFn({ method: "GET" })
         .select("id, first_name, last_name, matricule, class_name, fee_balance, wallet_balance, photo_url")
         .eq("id", student_id).single(),
       supabaseAdmin.from("schools").select("name, city, region, code").eq("id", school_id).single(),
-      supabaseAdmin.from("student_fees")
-        .select("id, label, amount_fcfa, discount_fcfa, due_date")
+      supabaseAdmin.from("student_fee_status")
+        .select("id, label, amount_fcfa, discount_fcfa, net_fcfa, paid_fcfa, balance_fcfa, status, due_date")
         .eq("student_id", student_id).order("due_date", { ascending: true }),
       supabaseAdmin.from("payments")
         .select("id, amount_fcfa, method, paid_at, receipt_no, reference")
-        .eq("student_id", student_id).order("paid_at", { ascending: false }).limit(50),
+        .eq("student_id", student_id).eq("voided", false).order("paid_at", { ascending: false }).limit(50),
       supabaseAdmin.from("attendance")
         .select("date, status, subject")
         .eq("student_id", student_id).order("date", { ascending: false }).limit(60),

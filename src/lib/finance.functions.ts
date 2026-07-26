@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getUserSchoolId } from "./school-context";
+import { openInvoicesFor, invoicesFor, allocateOldestFirst, studentCredit } from "./fee-allocation";
 
 export type PaymentMethod = "cash" | "momo" | "bank" | "cheque" | "other";
 export type FeeKind = "registration" | "tuition" | "other";
@@ -114,7 +115,15 @@ export const listPayments = createServerFn({ method: "GET" })
 
 export const recordPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { student_id: string; amount_fcfa: number; method: PaymentMethod; reference?: string; note?: string; paid_at?: string }) => d)
+  .inputValidator((d: {
+    student_id: string;
+    amount_fcfa: number;
+    method: PaymentMethod;
+    reference?: string;
+    note?: string;
+    paid_at?: string;
+    allocations?: { student_fee_id: string; amount_fcfa: number }[];
+  }) => d)
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const schoolId = await getUserSchoolId(supabase, userId);
@@ -124,6 +133,27 @@ export const recordPayment = createServerFn({ method: "POST" })
       throw new Error("A reference (transaction ID, cheque #, deposit slip) is required for non-cash payments.");
     }
     if (!(data.amount_fcfa > 0)) throw new Error("Amount must be greater than zero.");
+
+    // Resolve the allocation plan BEFORE inserting the payment.
+    const open = await openInvoicesFor(supabase, schoolId, data.student_id);
+    const balanceById = new Map(open.map((i) => [i.id, i.balance_fcfa]));
+    let plan: { student_fee_id: string; amount_fcfa: number }[] = [];
+    if (data.allocations && data.allocations.length > 0) {
+      for (const a of data.allocations) {
+        const amt = Math.round(Number(a.amount_fcfa ?? 0));
+        if (amt <= 0) continue;
+        const bal = balanceById.get(a.student_fee_id);
+        if (bal === undefined) throw new Error("An invoice in this payment does not belong to this student or is already settled.");
+        if (amt > bal) throw new Error("Allocated amount exceeds the balance left on an invoice.");
+        plan.push({ student_fee_id: a.student_fee_id, amount_fcfa: amt });
+      }
+      const sum = plan.reduce((s, p) => s + p.amount_fcfa, 0);
+      if (sum > data.amount_fcfa) throw new Error("Allocations exceed the amount received.");
+    } else {
+      // Auto-allocate: registration first, then oldest due date.
+      plan = allocateOldestFirst(open, data.amount_fcfa);
+    }
+
     const { data: inserted, error } = await supabase.from("payments").insert({
       school_id: schoolId,
       student_id: data.student_id,
@@ -135,7 +165,26 @@ export const recordPayment = createServerFn({ method: "POST" })
       recorded_by: userId,
     }).select("id, receipt_no").single();
     if (error) throw new Error(error.message);
-    return { ok: true, id: inserted?.id, receipt_no: inserted?.receipt_no };
+
+    if (plan.length > 0 && inserted) {
+      const { error: aErr } = await supabase.from("payment_allocations").insert(
+        plan.map((p) => ({
+          school_id: schoolId,
+          payment_id: inserted.id,
+          student_fee_id: p.student_fee_id,
+          amount_fcfa: p.amount_fcfa,
+        })),
+      );
+      if (aErr) throw new Error(`Payment saved but could not be applied to invoices: ${aErr.message}`);
+    }
+    const allocated = plan.reduce((s, p) => s + p.amount_fcfa, 0);
+    return {
+      ok: true,
+      id: inserted?.id,
+      receipt_no: inserted?.receipt_no,
+      allocated,
+      credit: Math.max(data.amount_fcfa - allocated, 0),
+    };
   });
 
 export const deletePayment = createServerFn({ method: "POST" })
@@ -273,7 +322,7 @@ export const financeSummary = createServerFn({ method: "GET" })
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) return { collected: 0, outstanding: 0, students: 0, thisMonth: 0 };
     const [pays, studs] = await Promise.all([
-      supabase.from("payments").select("amount_fcfa, paid_at").eq("school_id", schoolId),
+      supabase.from("payments").select("amount_fcfa, paid_at").eq("school_id", schoolId).eq("voided", false),
       supabase.from("students").select("fee_balance").eq("school_id", schoolId).eq("status", "active"),
     ]);
     const collected = (pays.data ?? []).reduce((a, r) => a + (r.amount_fcfa ?? 0), 0);
@@ -294,17 +343,41 @@ export const listStudentFees = createServerFn({ method: "GET" })
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) return [];
     let q = supabase
-      .from("student_fees")
-      .select("id, student_id, fee_structure_id, label, amount_fcfa, discount_fcfa, academic_year, due_date, note, created_at, students(first_name,last_name,matricule,class_name)")
+      .from("student_fee_status")
+      .select("id, student_id, fee_structure_id, label, kind, amount_fcfa, discount_fcfa, net_fcfa, paid_fcfa, balance_fcfa, status, academic_year, due_date, note, created_at")
       .eq("school_id", schoolId)
       .order("due_date", { ascending: true, nullsFirst: false });
     if (data.studentId) q = q.eq("student_id", data.studentId);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    const filtered = data.className
-      ? (rows ?? []).filter((r) => (r as { students?: { class_name?: string } }).students?.class_name === data.className)
-      : (rows ?? []);
-    return filtered;
+    const ids = Array.from(new Set((rows ?? []).map((r) => r.student_id as string)));
+    const { data: studs } = ids.length
+      ? await supabase.from("students").select("id, first_name, last_name, matricule, class_name").in("id", ids)
+      : { data: [] as { id: string; first_name: string; last_name: string; matricule: string | null; class_name: string | null }[] };
+    const map = new Map((studs ?? []).map((s) => [s.id, s]));
+    const withStudent = (rows ?? []).map((r) => ({ ...r, students: map.get(r.student_id as string) ?? null }));
+    return data.className
+      ? withStudent.filter((r) => r.students?.class_name === data.className)
+      : withStudent;
+  });
+
+/** Open invoices + credit on account for the payment dialog. */
+export const getStudentBilling = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { studentId: string }) => d)
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) return { invoices: [], open: [], credit: 0, outstanding: 0 };
+    const all = await invoicesFor(supabase, schoolId, data.studentId);
+    const credit = await studentCredit(supabase, data.studentId);
+    const open = all.filter((i) => i.balance_fcfa > 0);
+    return {
+      invoices: all,
+      open,
+      credit,
+      outstanding: open.reduce((s, i) => s + i.balance_fcfa, 0),
+    };
   });
 
 export const upsertStudentFee = createServerFn({ method: "POST" })
@@ -399,7 +472,18 @@ export const getPaymentReceipt = createServerFn({ method: "GET" })
       .from("schools").select("name, code, city, region, motto").eq("id", schoolId).single();
     const { data: cashier } = await supabase
       .from("profiles").select("full_name").eq("id", userId).maybeSingle();
-    return { payment: p, school, cashier };
+    const { data: allocs } = await supabase
+      .from("payment_allocations")
+      .select("amount_fcfa, student_fees(label, due_date)")
+      .eq("payment_id", data.id);
+    const allocations = (allocs ?? []).map((a) => ({
+      amount_fcfa: Number(a.amount_fcfa ?? 0),
+      label: (a as { student_fees?: { label?: string } }).student_fees?.label ?? "Fee",
+      due_date: (a as { student_fees?: { due_date?: string | null } }).student_fees?.due_date ?? null,
+    }));
+    const allocated = allocations.reduce((s, a) => s + a.amount_fcfa, 0);
+    const credit = p ? await studentCredit(supabase, p.student_id) : 0;
+    return { payment: p, school, cashier, allocations, allocated, credit };
   });
 
 export const recomputeAllBalances = createServerFn({ method: "POST" })

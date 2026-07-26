@@ -20,32 +20,47 @@ export const listFeesAging = createServerFn({ method: "GET" })
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) return { rows: [], totals: { current: 0, "1_7": 0, "8_30": 0, "31_60": 0, "60_plus": 0, total: 0 } };
 
-    // Load students with a balance and their guardians
+    // Students (active) + guardians
     const { data: students, error: se } = await supabase
       .from("students")
       .select("id, first_name, last_name, matricule, class_name, fee_balance, guardians(full_name, phone, relationship)")
       .eq("school_id", schoolId)
-      .eq("status", "active")
-      .gt("fee_balance", 0)
-      .order("fee_balance", { ascending: false });
+      .eq("status", "active");
     if (se) throw new Error(se.message);
 
-    // Load unpaid-ish student_fees to compute earliest overdue date per student
+    // Every invoice with a remaining balance — aged individually by its own due date
     const { data: fees, error: fe } = await supabase
-      .from("student_fees")
-      .select("student_id, amount_fcfa, discount_fcfa, due_date")
+      .from("student_fee_status")
+      .select("student_id, label, due_date, balance_fcfa")
       .eq("school_id", schoolId)
-      .not("due_date", "is", null);
+      .gt("balance_fcfa", 0);
     if (fe) throw new Error(fe.message);
 
     const now = new Date();
-    const earliestOverdue = new Map<string, string>();
+    const daysFor = (due: string | null) =>
+      due ? Math.floor((now.getTime() - new Date(due).getTime()) / 86400000) : 0;
+
+    // Per-student aggregation of per-invoice buckets
+    const perStudent = new Map<
+      string,
+      { total: number; buckets: Record<AgingBucket, number>; earliest: string | null; days: number }
+    >();
     for (const f of fees ?? []) {
-      if (!f.due_date) continue;
-      const d = new Date(f.due_date);
-      if (d > now) continue;
-      const prev = earliestOverdue.get(f.student_id);
-      if (!prev || new Date(prev) > d) earliestOverdue.set(f.student_id, f.due_date);
+      const sid = f.student_id as string;
+      const bal = Number(f.balance_fcfa ?? 0);
+      if (bal <= 0) continue;
+      const days = daysFor(f.due_date as string | null);
+      const b = bucketFor(days);
+      const entry =
+        perStudent.get(sid) ??
+        { total: 0, buckets: { current: 0, "1_7": 0, "8_30": 0, "31_60": 0, "60_plus": 0 }, earliest: null, days: 0 };
+      entry.total += bal;
+      entry.buckets[b] += bal;
+      if (days > 0 && (!entry.earliest || new Date(entry.earliest) > new Date(f.due_date as string))) {
+        entry.earliest = f.due_date as string;
+        entry.days = days;
+      }
+      perStudent.set(sid, entry);
     }
 
     type Row = {
@@ -55,31 +70,35 @@ export const listFeesAging = createServerFn({ method: "GET" })
       earliest_due: string | null; days_overdue: number; bucket: AgingBucket;
     };
 
-    const rows: Row[] = (students ?? []).map((s) => {
-      const g = (s.guardians as { full_name?: string; phone?: string; relationship?: string }[] | null)?.[0];
-      const earliest = earliestOverdue.get(s.id) ?? null;
-      const days = earliest ? Math.floor((now.getTime() - new Date(earliest).getTime()) / 86400000) : 0;
-      return {
-        id: s.id,
-        first_name: s.first_name,
-        last_name: s.last_name,
-        matricule: s.matricule,
-        class_name: s.class_name,
-        fee_balance: s.fee_balance ?? 0,
-        guardian_name: g?.full_name ?? null,
-        guardian_phone: g?.phone ?? null,
-        guardian_relationship: g?.relationship ?? null,
-        earliest_due: earliest,
-        days_overdue: Math.max(days, 0),
-        bucket: bucketFor(days),
-      };
-    });
-
     const totals = { current: 0, "1_7": 0, "8_30": 0, "31_60": 0, "60_plus": 0, total: 0 };
-    for (const r of rows) {
-      totals[r.bucket] += r.fee_balance;
-      totals.total += r.fee_balance;
-    }
+    const rows: Row[] = (students ?? [])
+      .map((s): Row | null => {
+        const g = (s.guardians as { full_name?: string; phone?: string; relationship?: string }[] | null)?.[0];
+        const e = perStudent.get(s.id);
+        if (!e || e.total <= 0) return null;
+        // Totals are aged per invoice, so a paid-up old invoice can't drag the whole debt into 60+.
+        for (const k of ["current", "1_7", "8_30", "31_60", "60_plus"] as AgingBucket[]) totals[k] += e.buckets[k];
+        totals.total += e.total;
+        // The student row is labelled by their worst (oldest) overdue invoice.
+        const worst: AgingBucket =
+          (["60_plus", "31_60", "8_30", "1_7", "current"] as AgingBucket[]).find((k) => e.buckets[k] > 0) ?? "current";
+        return {
+          id: s.id,
+          first_name: s.first_name,
+          last_name: s.last_name,
+          matricule: s.matricule,
+          class_name: s.class_name,
+          fee_balance: e.total,
+          guardian_name: g?.full_name ?? null,
+          guardian_phone: g?.phone ?? null,
+          guardian_relationship: g?.relationship ?? null,
+          earliest_due: e.earliest,
+          days_overdue: Math.max(e.days, 0),
+          bucket: worst,
+        };
+      })
+      .filter((r) => r !== null)
+      .sort((a, b) => b.fee_balance - a.fee_balance);
 
     let filtered = rows;
     if (data.className) filtered = filtered.filter((r) => r.class_name === data.className);

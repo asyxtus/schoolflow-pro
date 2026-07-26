@@ -28,6 +28,7 @@ export const getDashboardStats = createServerFn({ method: "GET" })
         .from("payments")
         .select("amount_fcfa, method")
         .eq("school_id", schoolId)
+        .eq("voided", false)
         .gte("paid_at", startToday)
         .lte("paid_at", endToday),
       supabase
@@ -41,18 +42,20 @@ export const getDashboardStats = createServerFn({ method: "GET" })
         .eq("school_id", schoolId)
         .in("status", ["approved", "departed"]),
       supabase
-        .from("student_fees")
-        .select("id, label, due_date, amount_fcfa, discount_fcfa, student_id, students(first_name,last_name,class_name,fee_balance)")
+        .from("student_fee_status")
+        .select("id, label, due_date, amount_fcfa, discount_fcfa, balance_fcfa, student_id")
         .eq("school_id", schoolId)
+        .gt("balance_fcfa", 0)
         .not("due_date", "is", null)
         .gte("due_date", todayISO)
         .lte("due_date", in14)
         .order("due_date", { ascending: true })
         .limit(50),
       supabase
-        .from("student_fees")
-        .select("id, label, due_date, amount_fcfa, discount_fcfa, student_id, students(first_name,last_name,class_name,fee_balance)")
+        .from("student_fee_status")
+        .select("id, label, due_date, amount_fcfa, discount_fcfa, balance_fcfa, student_id")
         .eq("school_id", schoolId)
+        .gt("balance_fcfa", 0)
         .not("due_date", "is", null)
         .lt("due_date", todayISO)
         .order("due_date", { ascending: false })
@@ -61,6 +64,7 @@ export const getDashboardStats = createServerFn({ method: "GET" })
         .from("payments")
         .select("id, amount_fcfa, method, paid_at, receipt_no, students(first_name,last_name,class_name)")
         .eq("school_id", schoolId)
+        .eq("voided", false)
         .order("paid_at", { ascending: false })
         .limit(8),
       supabase
@@ -146,12 +150,23 @@ export const getDashboardStats = createServerFn({ method: "GET" })
       .sort((a, b) => b.billed - a.billed)
       .slice(0, 6);
 
-    // Aging buckets for overdue invoices — only for students still owing money
+    // Student names for invoice rows (the status view has no embedded student)
+    const feeStudentIds = Array.from(
+      new Set([
+        ...(upcomingFees.data ?? []).map((f) => f.student_id as string),
+        ...(overdueFees.data ?? []).map((f) => f.student_id as string),
+      ]),
+    );
+    const { data: feeStudents } = feeStudentIds.length
+      ? await supabase.from("students").select("id, first_name, last_name, class_name").in("id", feeStudentIds)
+      : { data: [] as { id: string; first_name: string; last_name: string; class_name: string | null }[] };
+    const studentMap = new Map((feeStudents ?? []).map((s) => [s.id, s]));
+
+    // Aging buckets — each overdue invoice aged by its own remaining balance and due date
     const buckets = { d0_7: 0, d8_30: 0, d31_60: 0, d60p: 0, count: 0 };
     for (const f of overdueFees.data ?? []) {
-      const bal = Number((f as { students?: { fee_balance?: number } }).students?.fee_balance ?? 0);
-      if (bal <= 0) continue;
-      const amt = Math.max(Number(f.amount_fcfa ?? 0) - Number(f.discount_fcfa ?? 0), 0);
+      const amt = Number(f.balance_fcfa ?? 0);
+      if (amt <= 0) continue;
       const days = Math.floor((today.getTime() - new Date(f.due_date!).getTime()) / 86400_000);
       buckets.count++;
       if (days <= 7) buckets.d0_7 += amt;
@@ -161,15 +176,18 @@ export const getDashboardStats = createServerFn({ method: "GET" })
     }
 
     // Upcoming deadlines
-    const upcoming = (upcomingFees.data ?? []).map((f) => ({
-      id: f.id,
-      label: f.label,
-      due_date: f.due_date!,
-      amount_fcfa: Math.max(Number(f.amount_fcfa ?? 0) - Number(f.discount_fcfa ?? 0), 0),
-      student_id: f.student_id,
-      student_name: `${(f as { students?: { first_name?: string } }).students?.first_name ?? ""} ${(f as { students?: { last_name?: string } }).students?.last_name ?? ""}`.trim(),
-      class_name: (f as { students?: { class_name?: string } }).students?.class_name ?? "",
-    }));
+    const upcoming = (upcomingFees.data ?? []).map((f) => {
+      const s = studentMap.get(f.student_id as string);
+      return {
+        id: f.id as string,
+        label: f.label as string,
+        due_date: f.due_date!,
+        amount_fcfa: Number(f.balance_fcfa ?? 0),
+        student_id: f.student_id as string,
+        student_name: `${s?.first_name ?? ""} ${s?.last_name ?? ""}`.trim(),
+        class_name: s?.class_name ?? "",
+      };
+    });
 
     // Recent payments
     const recent = (recentPays.data ?? []).map((p) => ({

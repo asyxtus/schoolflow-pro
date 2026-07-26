@@ -20,7 +20,7 @@ export const financeReport = createServerFn({ method: "GET" })
     const [pays, fees, studs, wallet, runs, subs, incidents] = await Promise.all([
       supabase.from("payments")
         .select("id, amount_fcfa, method, paid_at, receipt_no, students(first_name,last_name,class_name)")
-        .eq("school_id", schoolId).gte("paid_at", from).lte("paid_at", to)
+        .eq("school_id", schoolId).eq("voided", false).gte("paid_at", from).lte("paid_at", to)
         .order("paid_at", { ascending: false }),
       supabase.from("student_fees").select("amount_fcfa, discount_fcfa, students(class_name)").eq("school_id", schoolId),
       supabase.from("students").select("class_name, fee_balance").eq("school_id", schoolId).eq("status", "active"),

@@ -193,7 +193,7 @@ export const cashPosition = createServerFn({ method: "GET" })
     const to = data.to ?? new Date().toISOString();
 
     const [pays, exps, runs, pending] = await Promise.all([
-      supabase.from("payments").select("amount_fcfa, method, paid_at")
+      supabase.from("payments").select("amount_fcfa, method, paid_at").eq("voided", false)
         .eq("school_id", schoolId).gte("paid_at", from).lte("paid_at", to),
       supabase.from("expenses").select("amount_fcfa, method, spent_at, status, expense_categories(name)")
         .eq("school_id", schoolId).eq("status", "approved").gte("spent_at", from).lte("spent_at", to),
