@@ -29,7 +29,7 @@ import {
   listPayments, recordPayment, voidPayment, type PaymentMethod,
   type FeeKind, type FeeInstallment,
   listStudentFees, upsertStudentFee, deleteStudentFee, bulkAssignFee,
-  recomputeAllBalances,
+  recomputeAllBalances, getStudentBilling,
 } from "@/lib/finance.functions";
 import { useClassOptions } from "@/hooks/use-classes";
 
