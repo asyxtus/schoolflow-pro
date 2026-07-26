@@ -472,7 +472,18 @@ export const getPaymentReceipt = createServerFn({ method: "GET" })
       .from("schools").select("name, code, city, region, motto").eq("id", schoolId).single();
     const { data: cashier } = await supabase
       .from("profiles").select("full_name").eq("id", userId).maybeSingle();
-    return { payment: p, school, cashier };
+    const { data: allocs } = await supabase
+      .from("payment_allocations")
+      .select("amount_fcfa, student_fees(label, due_date)")
+      .eq("payment_id", data.id);
+    const allocations = (allocs ?? []).map((a) => ({
+      amount_fcfa: Number(a.amount_fcfa ?? 0),
+      label: (a as { student_fees?: { label?: string } }).student_fees?.label ?? "Fee",
+      due_date: (a as { student_fees?: { due_date?: string | null } }).student_fees?.due_date ?? null,
+    }));
+    const allocated = allocations.reduce((s, a) => s + a.amount_fcfa, 0);
+    const credit = p ? await studentCredit(supabase, p.student_id) : 0;
+    return { payment: p, school, cashier, allocations, allocated, credit };
   });
 
 export const recomputeAllBalances = createServerFn({ method: "POST" })
