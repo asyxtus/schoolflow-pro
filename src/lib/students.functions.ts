@@ -18,32 +18,31 @@ export const getStudents = createServerFn({ method: "GET" })
         .order("last_name", { ascending: true })
         .order("first_name", { ascending: true }),
       supabase
-        .from("student_fees")
-        .select("student_id, amount_fcfa, discount_fcfa, fee_structures!inner(kind)")
+        .from("student_fee_status")
+        .select("student_id, net_fcfa, balance_fcfa")
         .eq("school_id", schoolId)
-        .eq("fee_structures.kind", "registration"),
+        .eq("kind", "registration"),
       supabase
         .from("payments")
         .select("student_id, amount_fcfa")
-        .eq("school_id", schoolId),
+        .eq("school_id", schoolId)
+        .eq("voided", false),
     ]);
     if (studentsRes.error) throw studentsRes.error;
 
     const regBilled = new Map<string, number>();
+    const regOwed = new Map<string, number>();
     for (const r of regFeesRes.data ?? []) {
       const sid = (r as { student_id: string }).student_id;
-      const amt = Math.max(Number(r.amount_fcfa ?? 0) - Number(r.discount_fcfa ?? 0), 0);
-      regBilled.set(sid, (regBilled.get(sid) ?? 0) + amt);
+      regBilled.set(sid, (regBilled.get(sid) ?? 0) + Number(r.net_fcfa ?? 0));
+      regOwed.set(sid, (regOwed.get(sid) ?? 0) + Number(r.balance_fcfa ?? 0));
     }
-    const paid = new Map<string, number>();
-    for (const p of paysRes.data ?? []) {
-      paid.set(p.student_id, (paid.get(p.student_id) ?? 0) + Number(p.amount_fcfa ?? 0));
-    }
-    return (studentsRes.data ?? []).map((s) => {
-      const billed = regBilled.get(s.id) ?? 0;
-      const covered = Math.min(paid.get(s.id) ?? 0, billed);
-      return { ...s, registration_owed: Math.max(billed - covered, 0), registration_billed: billed };
-    });
+    void paysRes;
+    return (studentsRes.data ?? []).map((s) => ({
+      ...s,
+      registration_owed: regOwed.get(s.id) ?? 0,
+      registration_billed: regBilled.get(s.id) ?? 0,
+    }));
   });
 
 const studentByIdSchema = z.object({ id: z.string().uuid() });
@@ -66,51 +65,51 @@ export const getStudentById = createServerFn({ method: "GET" })
     if (error) throw error;
 
     // Live attendance counts + registration status
-    const [attRes, regRes, paysAgg, feesAgg] = await Promise.all([
+    const [attRes, regRes, paysAgg, feesAgg, creditRes] = await Promise.all([
       supabase
         .from("attendance")
         .select("status")
         .eq("school_id", schoolId)
         .eq("student_id", data.id),
       supabase
-        .from("student_fees")
-        .select("amount_fcfa, discount_fcfa, fee_structures!inner(kind)")
+        .from("student_fee_status")
+        .select("net_fcfa, balance_fcfa")
         .eq("school_id", schoolId)
         .eq("student_id", data.id)
-        .eq("fee_structures.kind", "registration"),
+        .eq("kind", "registration"),
       supabase
         .from("payments")
         .select("amount_fcfa")
         .eq("school_id", schoolId)
-        .eq("student_id", data.id),
+        .eq("student_id", data.id)
+        .eq("voided", false),
       supabase
-        .from("student_fees")
-        .select("amount_fcfa, discount_fcfa")
+        .from("student_fee_status")
+        .select("net_fcfa, balance_fcfa")
         .eq("school_id", schoolId)
         .eq("student_id", data.id),
+      supabase.rpc("student_credit", { _student_id: data.id }),
     ]);
     const att = attRes.data ?? [];
     const present = att.filter((a) => a.status === "present").length;
     const absent = att.filter((a) => a.status === "absent").length;
     const late = att.filter((a) => a.status === "late").length;
     const excused = att.filter((a) => a.status === "excused").length;
-    const regBilled = (regRes.data ?? []).reduce(
-      (s, r) => s + Math.max(Number(r.amount_fcfa ?? 0) - Number(r.discount_fcfa ?? 0), 0),
-      0,
-    );
-    const totalBilled = (feesAgg.data ?? []).reduce(
-      (s, r) => s + Math.max(Number(r.amount_fcfa ?? 0) - Number(r.discount_fcfa ?? 0), 0),
-      0,
-    );
+    const regBilled = (regRes.data ?? []).reduce((s, r) => s + Number(r.net_fcfa ?? 0), 0);
+    const regOwed = (regRes.data ?? []).reduce((s, r) => s + Number(r.balance_fcfa ?? 0), 0);
+    const totalBilled = (feesAgg.data ?? []).reduce((s, r) => s + Number(r.net_fcfa ?? 0), 0);
+    const outstanding = (feesAgg.data ?? []).reduce((s, r) => s + Number(r.balance_fcfa ?? 0), 0);
     const totalPaid = (paysAgg.data ?? []).reduce((s, p) => s + Number(p.amount_fcfa ?? 0), 0);
-    const regCovered = Math.min(totalPaid, regBilled);
+    const credit = Number(creditRes.data ?? 0);
     return {
       ...student,
       attendance_counts: { present, absent, late, excused, total: att.length },
       registration_billed: regBilled,
-      registration_owed: Math.max(regBilled - regCovered, 0),
+      registration_owed: Math.max(regOwed - credit, 0),
       total_billed: totalBilled,
       total_paid: totalPaid,
+      outstanding,
+      credit,
     };
   });
 
