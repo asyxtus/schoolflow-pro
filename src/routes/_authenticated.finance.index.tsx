@@ -191,7 +191,7 @@ function FinancePage() {
                 const res = await recFn({ data: v });
                 refetchAll();
                 qc.invalidateQueries({ queryKey: ["payments"] });
-                toast.success("Payment recorded", {
+                toast.success(res?.credit ? `Payment recorded · ${fmt(res.credit)} kept as credit` : "Payment recorded", {
                   action: res?.id ? { label: "Print receipt", onClick: () => openReceipt(res.id!) } : undefined,
                 });
               }}
