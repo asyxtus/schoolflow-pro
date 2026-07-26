@@ -343,17 +343,41 @@ export const listStudentFees = createServerFn({ method: "GET" })
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) return [];
     let q = supabase
-      .from("student_fees")
-      .select("id, student_id, fee_structure_id, label, amount_fcfa, discount_fcfa, academic_year, due_date, note, created_at, students(first_name,last_name,matricule,class_name)")
+      .from("student_fee_status")
+      .select("id, student_id, fee_structure_id, label, kind, amount_fcfa, discount_fcfa, net_fcfa, paid_fcfa, balance_fcfa, status, academic_year, due_date, note, created_at")
       .eq("school_id", schoolId)
       .order("due_date", { ascending: true, nullsFirst: false });
     if (data.studentId) q = q.eq("student_id", data.studentId);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    const filtered = data.className
-      ? (rows ?? []).filter((r) => (r as { students?: { class_name?: string } }).students?.class_name === data.className)
-      : (rows ?? []);
-    return filtered;
+    const ids = Array.from(new Set((rows ?? []).map((r) => r.student_id as string)));
+    const { data: studs } = ids.length
+      ? await supabase.from("students").select("id, first_name, last_name, matricule, class_name").in("id", ids)
+      : { data: [] as { id: string; first_name: string; last_name: string; matricule: string | null; class_name: string | null }[] };
+    const map = new Map((studs ?? []).map((s) => [s.id, s]));
+    const withStudent = (rows ?? []).map((r) => ({ ...r, students: map.get(r.student_id as string) ?? null }));
+    return data.className
+      ? withStudent.filter((r) => r.students?.class_name === data.className)
+      : withStudent;
+  });
+
+/** Open invoices + credit on account for the payment dialog. */
+export const getStudentBilling = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { studentId: string }) => d)
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const schoolId = await getUserSchoolId(supabase, userId);
+    if (!schoolId) return { invoices: [], open: [], credit: 0, outstanding: 0 };
+    const all = await invoicesFor(supabase, schoolId, data.studentId);
+    const credit = await studentCredit(supabase, data.studentId);
+    const open = all.filter((i) => i.balance_fcfa > 0);
+    return {
+      invoices: all,
+      open,
+      credit,
+      outstanding: open.reduce((s, i) => s + i.balance_fcfa, 0),
+    };
   });
 
 export const upsertStudentFee = createServerFn({ method: "POST" })
