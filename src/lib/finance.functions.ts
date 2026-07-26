@@ -322,7 +322,7 @@ export const financeSummary = createServerFn({ method: "GET" })
     const schoolId = await getUserSchoolId(supabase, userId);
     if (!schoolId) return { collected: 0, outstanding: 0, students: 0, thisMonth: 0 };
     const [pays, studs] = await Promise.all([
-      supabase.from("payments").select("amount_fcfa, paid_at").eq("school_id", schoolId),
+      supabase.from("payments").select("amount_fcfa, paid_at").eq("school_id", schoolId).eq("voided", false),
       supabase.from("students").select("fee_balance").eq("school_id", schoolId).eq("status", "active"),
     ]);
     const collected = (pays.data ?? []).reduce((a, r) => a + (r.amount_fcfa ?? 0), 0);
