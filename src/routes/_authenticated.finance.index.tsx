@@ -291,8 +291,10 @@ function FinancePage() {
             <Card><CardContent className="p-0"><div className="divide-y">
               {invQ.data.map((r) => {
                 const s = (r as { students?: { first_name?: string; last_name?: string; matricule?: string; class_name?: string } }).students;
-                const net = Math.max(0, r.amount_fcfa - (r.discount_fcfa ?? 0));
-                const overdue = r.due_date && new Date(r.due_date) < new Date();
+                const net = Number(r.net_fcfa ?? 0);
+                const paid = Number(r.paid_fcfa ?? 0);
+                const balance = Number(r.balance_fcfa ?? 0);
+                const status = (r.status ?? "unpaid") as "paid" | "partial" | "overdue" | "unpaid";
                 return (
                   <div key={r.id} className="flex items-center gap-3 p-4">
                     <FileText className="h-4 w-4 text-muted-foreground" />
@@ -307,13 +309,20 @@ function FinancePage() {
                         {r.due_date && ` · Due ${new Date(r.due_date).toLocaleDateString()}`}
                       </div>
                     </div>
-                    {overdue && <Badge variant="destructive">Overdue</Badge>}
+                    <Badge variant={status === "paid" ? "secondary" : status === "overdue" ? "destructive" : "outline"}>
+                      {status === "paid" ? "Paid" : status === "partial" ? "Partly paid" : status === "overdue" ? "Overdue" : "Unpaid"}
+                    </Badge>
                     <div className="text-right">
-                      <div className="font-semibold">{fmt(net)}</div>
-                      {r.discount_fcfa > 0 && <div className="text-xs text-muted-foreground">-{fmt(r.discount_fcfa)} discount</div>}
+                      <div className="font-semibold">{fmt(balance)}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {paid > 0 ? `${fmt(paid)} paid of ${fmt(net)}` : `of ${fmt(net)}`}
+                        {Number(r.discount_fcfa ?? 0) > 0 && ` · -${fmt(Number(r.discount_fcfa))} discount`}
+                      </div>
                     </div>
                     <Button size="icon" variant="ghost" aria-label="Delete"
-                      onClick={async () => { await delInv({ data: { id: r.id } }); refetchAll(); }}>
+                      disabled={paid > 0}
+                      title={paid > 0 ? "This invoice has payments applied to it and cannot be deleted" : "Delete invoice"}
+                      onClick={async () => { await delInv({ data: { id: r.id as string } }); refetchAll(); }}>
                       <Trash2 className="h-4 w-4 text-muted-foreground" />
                     </Button>
                   </div>
