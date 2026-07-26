@@ -114,7 +114,15 @@ export const listPayments = createServerFn({ method: "GET" })
 
 export const recordPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { student_id: string; amount_fcfa: number; method: PaymentMethod; reference?: string; note?: string; paid_at?: string }) => d)
+  .inputValidator((d: {
+    student_id: string;
+    amount_fcfa: number;
+    method: PaymentMethod;
+    reference?: string;
+    note?: string;
+    paid_at?: string;
+    allocations?: { student_fee_id: string; amount_fcfa: number }[];
+  }) => d)
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const schoolId = await getUserSchoolId(supabase, userId);
@@ -124,6 +132,27 @@ export const recordPayment = createServerFn({ method: "POST" })
       throw new Error("A reference (transaction ID, cheque #, deposit slip) is required for non-cash payments.");
     }
     if (!(data.amount_fcfa > 0)) throw new Error("Amount must be greater than zero.");
+
+    // Resolve the allocation plan BEFORE inserting the payment.
+    const open = await openInvoicesFor(supabase, schoolId, data.student_id);
+    const balanceById = new Map(open.map((i) => [i.id, i.balance_fcfa]));
+    let plan: { student_fee_id: string; amount_fcfa: number }[] = [];
+    if (data.allocations && data.allocations.length > 0) {
+      for (const a of data.allocations) {
+        const amt = Math.round(Number(a.amount_fcfa ?? 0));
+        if (amt <= 0) continue;
+        const bal = balanceById.get(a.student_fee_id);
+        if (bal === undefined) throw new Error("An invoice in this payment does not belong to this student or is already settled.");
+        if (amt > bal) throw new Error("Allocated amount exceeds the balance left on an invoice.");
+        plan.push({ student_fee_id: a.student_fee_id, amount_fcfa: amt });
+      }
+      const sum = plan.reduce((s, p) => s + p.amount_fcfa, 0);
+      if (sum > data.amount_fcfa) throw new Error("Allocations exceed the amount received.");
+    } else {
+      // Auto-allocate: registration first, then oldest due date.
+      plan = allocateOldestFirst(open, data.amount_fcfa);
+    }
+
     const { data: inserted, error } = await supabase.from("payments").insert({
       school_id: schoolId,
       student_id: data.student_id,
@@ -135,7 +164,26 @@ export const recordPayment = createServerFn({ method: "POST" })
       recorded_by: userId,
     }).select("id, receipt_no").single();
     if (error) throw new Error(error.message);
-    return { ok: true, id: inserted?.id, receipt_no: inserted?.receipt_no };
+
+    if (plan.length > 0 && inserted) {
+      const { error: aErr } = await supabase.from("payment_allocations").insert(
+        plan.map((p) => ({
+          school_id: schoolId,
+          payment_id: inserted.id,
+          student_fee_id: p.student_fee_id,
+          amount_fcfa: p.amount_fcfa,
+        })),
+      );
+      if (aErr) throw new Error(`Payment saved but could not be applied to invoices: ${aErr.message}`);
+    }
+    const allocated = plan.reduce((s, p) => s + p.amount_fcfa, 0);
+    return {
+      ok: true,
+      id: inserted?.id,
+      receipt_no: inserted?.receipt_no,
+      allocated,
+      credit: Math.max(data.amount_fcfa - allocated, 0),
+    };
   });
 
 export const deletePayment = createServerFn({ method: "POST" })
