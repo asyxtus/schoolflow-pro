@@ -13,6 +13,9 @@
 -- Migration 2 moved the RLS SECURITY DEFINER helpers into private. The live
 -- database confirms the helpers are in private, so all policy references below
 -- intentionally use private.* rather than public.*.
+--
+-- This migration is deliberately idempotent so it can be safely rerun after a
+-- prior partial/manual application.
 
 BEGIN;
 
@@ -24,6 +27,10 @@ BEGIN;
 -- school/diocese policies could not prevent that access.
 
 DROP POLICY IF EXISTS "Authenticated can view schools" ON public.schools;
+DROP POLICY IF EXISTS "Users view own school" ON public.schools;
+DROP POLICY IF EXISTS "Diocese admins view their schools" ON public.schools;
+DROP POLICY IF EXISTS "Super admins view all schools" ON public.schools;
+DROP POLICY IF EXISTS "Super admins manage schools" ON public.schools;
 
 CREATE POLICY "Users view own school"
 ON public.schools
@@ -51,7 +58,6 @@ USING (
 );
 
 -- Keep school management restricted to super admins.
-DROP POLICY IF EXISTS "Super admins manage schools" ON public.schools;
 CREATE POLICY "Super admins manage schools"
 ON public.schools
 FOR ALL
@@ -109,6 +115,7 @@ WITH CHECK (
 -- school-bound.
 
 DROP POLICY IF EXISTS "Users view profiles in same school" ON public.profiles;
+
 CREATE POLICY "Users view profiles in same school"
 ON public.profiles
 FOR SELECT
