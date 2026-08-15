@@ -10,9 +10,9 @@
 --   5. Remove direct browser privileges from the role-assignment table; role
 --      changes remain controlled by its RLS policy and server-side/admin flows.
 --
--- This migration is intentionally conservative. It does NOT revoke normal CRUD
--- from ordinary operational tables because those tables are designed for direct
--- frontend CRUD protected by RLS.
+-- Migration 2 moved the RLS SECURITY DEFINER helpers into private. The live
+-- database confirms the helpers are in private, so all policy references below
+-- intentionally use private.* rather than public.*.
 
 BEGIN;
 
@@ -30,7 +30,7 @@ ON public.schools
 FOR SELECT
 TO authenticated
 USING (
-  id = public.current_user_school_id()
+  id = private.current_user_school_id()
 );
 
 CREATE POLICY "Diocese admins view their schools"
@@ -39,7 +39,7 @@ FOR SELECT
 TO authenticated
 USING (
   diocese_id IS NOT NULL
-  AND public.is_diocese_admin(auth.uid(), diocese_id)
+  AND private.is_diocese_admin(auth.uid(), diocese_id)
 );
 
 CREATE POLICY "Super admins view all schools"
@@ -47,7 +47,7 @@ ON public.schools
 FOR SELECT
 TO authenticated
 USING (
-  public.has_role(auth.uid(), 'super_admin'::app_role)
+  private.has_role(auth.uid(), 'super_admin'::app_role)
 );
 
 -- Keep school management restricted to super admins.
@@ -57,10 +57,10 @@ ON public.schools
 FOR ALL
 TO authenticated
 USING (
-  public.has_role(auth.uid(), 'super_admin'::app_role)
+  private.has_role(auth.uid(), 'super_admin'::app_role)
 )
 WITH CHECK (
-  public.has_role(auth.uid(), 'super_admin'::app_role)
+  private.has_role(auth.uid(), 'super_admin'::app_role)
 );
 
 -- ---------------------------------------------------------------------------
@@ -96,7 +96,7 @@ USING (
 WITH CHECK (
   auth.uid() = id
   AND (
-    school_id = public.current_user_school_id()
+    school_id = private.current_user_school_id()
     OR school_id IS NULL
   )
 );
@@ -117,7 +117,7 @@ USING (
   id = auth.uid()
   OR (
     school_id IS NOT NULL
-    AND school_id = public.current_user_school_id()
+    AND school_id = private.current_user_school_id()
   )
 );
 
