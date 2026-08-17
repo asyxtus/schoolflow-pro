@@ -33,8 +33,6 @@ export const getPlatformSchoolsSnapshot = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
-// Search any user on the platform by email or name, showing every role
-// grant they hold (school-scoped, diocese-scoped, or platform-wide).
 export const searchPlatformUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { query: string }) => d)
@@ -116,7 +114,8 @@ export const setSchoolActive = createServerFn({ method: "POST" })
       .select("name")
       .eq("id", data.schoolId)
       .maybeSingle();
-    const { error } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
       .from("schools")
       .update({ is_active: data.active })
       .eq("id", data.schoolId);
@@ -133,11 +132,6 @@ export const setSchoolActive = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// Platform-wide audit log: unlike listAuditLog (school.functions), this
-// pulls across every school plus platform-level rows (school_id IS NULL —
-// diocese creation, super_admin grants, etc). RLS already scopes it: the
-// existing per-school policy passes for super_admin on any school_id, and
-// the new platform-level policy covers the NULL-school_id rows.
 export const listPlatformAuditLog = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { limit?: number; q?: string } | undefined) => d ?? {})
@@ -170,6 +164,7 @@ export const listPlatformAuditLog = createServerFn({ method: "GET" })
         .includes(search),
     );
   });
+
 export const setSuperAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { userId: string; grant: boolean }) => d)
