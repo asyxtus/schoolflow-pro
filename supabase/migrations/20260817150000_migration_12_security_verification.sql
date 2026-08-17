@@ -1,9 +1,17 @@
 -- Migration 12: Security verification gate
 --
--- This migration makes the final high-confidence security invariants executable.
--- It intentionally does not blanket-enable FORCE RLS and does not attempt to
--- guess which school-scoped policies are business exceptions. Those are exposed
--- by private.security_audit() for review.
+-- This migration verifies the final high-confidence security invariants.
+--
+-- Important: the private RLS helper functions intentionally retain EXECUTE for
+-- authenticated because PostgreSQL evaluates RLS policies as the caller and
+-- those policies invoke the helpers. EXECUTE alone does not expose these
+-- functions as frontend RPCs when the private schema is not usable/exposed to
+-- the Data API. The security boundary is:
+--   1. private schema has no USAGE for Data API roles;
+--   2. anonymous has no EXECUTE on private helpers;
+--   3. helpers are SECURITY DEFINER with a restricted search_path.
+--
+-- This migration intentionally does not blanket-enable FORCE RLS.
 
 BEGIN;
 
@@ -74,18 +82,33 @@ BEGIN
     RAISE EXCEPTION 'Security verification failed: authenticated can directly mutate public.user_roles';
   END IF;
 
-  -- 5. No private helper may be directly callable by Data API roles.
+  -- 5. Private helper boundary.
+  --
+  -- RLS helpers are intentionally callable by authenticated because policies
+  -- invoke them. What must be impossible is direct anonymous invocation and
+  -- direct access through the private schema by Data API roles.
   SELECT count(*) INTO v_count
   FROM pg_catalog.pg_proc p
   JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'private'
-    AND (
-      pg_catalog.has_function_privilege('anon', p.oid, 'EXECUTE') OR
-      pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE')
-    );
+    AND pg_catalog.has_function_privilege('anon', p.oid, 'EXECUTE');
 
   IF v_count > 0 THEN
-    RAISE EXCEPTION 'Security verification failed: % private function(s) remain callable by Data API roles', v_count;
+    RAISE EXCEPTION 'Security verification failed: % private function(s) remain directly executable by anon', v_count;
+  END IF;
+
+  -- The private schema itself must not be usable by browser roles. This is the
+  -- important control that prevents direct SQL/RPC access to private helpers.
+  IF pg_catalog.has_schema_privilege('anon', 'private', 'USAGE') THEN
+    RAISE EXCEPTION 'Security verification failed: anon retains USAGE on private schema';
+  END IF;
+
+  IF pg_catalog.has_schema_privilege('authenticated', 'private', 'USAGE') THEN
+    RAISE EXCEPTION 'Security verification failed: authenticated retains USAGE on private schema';
+  END IF;
+
+  IF pg_catalog.has_schema_privilege('service_role', 'private', 'USAGE') THEN
+    RAISE EXCEPTION 'Security verification failed: service_role retains USAGE on private schema';
   END IF;
 
   -- 6. Only the two known trigger functions may remain SECURITY DEFINER in
