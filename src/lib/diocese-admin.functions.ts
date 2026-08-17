@@ -76,7 +76,8 @@ export const assignSchoolToDiocese = createServerFn({ method: "POST" })
   .inputValidator((d: { schoolId: string; dioceseId: string | null }) => d)
   .handler(async ({ context, data }) => {
     await assertSuperAdmin(context.supabase, context.userId);
-    const { error } = await context.supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
       .from("schools")
       .update({ diocese_id: data.dioceseId })
       .eq("id", data.schoolId);
@@ -122,9 +123,6 @@ export const listDioceseAdmins = createServerFn({ method: "GET" })
     };
   });
 
-// Adds a diocese admin: grants the role instantly if the person already
-// has an account (found by email in profiles), otherwise sends an
-// invitation via the same pipeline used for school staff invites.
 export const addDioceseAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { dioceseId: string; email: string }) => d)
