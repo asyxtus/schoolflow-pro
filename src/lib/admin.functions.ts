@@ -30,12 +30,28 @@ export const MANAGEABLE_ROLES: AppRole[] = [
 ];
 
 async function assertManager(supabase: SupabaseClient<Database>, userId: string, schoolId: string) {
-  const { data, error } = await supabase.rpc("can_manage_school_data", {
-    _user_id: userId,
-    _school_id: schoolId,
-  });
+  // private.can_manage_school_data is intentionally not exposed through the
+  // Supabase Data API. Use the caller's own role rows instead; the RLS policy
+  // "Users view own roles" allows this exact lookup and prevents reading
+  // another user's roles. Keep the school_id predicate to preserve the
+  // school boundary enforced by the original helper.
+  const { data: roles, error } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("school_id", schoolId);
+
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Only principals can manage staff");
+
+  const canManage = (roles ?? []).some((row) =>
+    row.role === "principal" ||
+    row.role === "vice_principal" ||
+    row.role === "bursar" ||
+    row.role === "secretary" ||
+    row.role === "super_admin",
+  );
+
+  if (!canManage) throw new Error("Only principals can manage staff");
 }
 
 // ─── Staff list ────────────────────────────────────────────────────
@@ -159,7 +175,7 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
     const { data: inv, error } = await supabase
       .from("staff_invitations")
       .select(
-        "id, email, role, status, expires_at, school_id, diocese_id, schools(name, city, region), dioceses(name)",
+        "id, email, role, status, expires_at, accepted_at, school_id, diocese_id, schools(name, city, region), dioceses(name)",
       )
       .eq("token", data.token)
       .maybeSingle();
