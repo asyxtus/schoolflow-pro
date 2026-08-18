@@ -1,19 +1,53 @@
 -- Migration 12: Security verification gate
 --
--- This migration verifies the final high-confidence security invariants.
+-- This migration enforces and verifies the final high-confidence security
+-- invariants. It is safe to rerun.
 --
--- Important: the private RLS helper functions intentionally retain EXECUTE for
--- authenticated because PostgreSQL evaluates RLS policies as the caller and
--- those policies invoke the helpers. EXECUTE alone does not expose these
--- functions as frontend RPCs when the private schema is not usable/exposed to
--- the Data API. The security boundary is:
---   1. private schema has no USAGE for Data API roles;
---   2. anonymous has no EXECUTE on private helpers;
+-- IMPORTANT: the private RLS helper functions intentionally retain EXECUTE
+-- for authenticated because PostgreSQL evaluates RLS policies as the caller
+-- and those policies invoke the helpers. EXECUTE alone is not the browser
+-- exposure we are trying to prevent.
+--
+-- The actual boundary is:
+--   1. private schema has NO USAGE for Data API roles;
+--   2. anon has NO EXECUTE on private helpers;
 --   3. helpers are SECURITY DEFINER with a restricted search_path.
 --
--- This migration intentionally does not blanket-enable FORCE RLS.
+-- We deliberately do NOT blanket-enable FORCE RLS.
 
 BEGIN;
+
+-- ---------------------------------------------------------------------------
+-- 0. Enforce the private-schema boundary before verifying it.
+-- ---------------------------------------------------------------------------
+-- CREATE SCHEMA normally grants USAGE to PUBLIC. Remove that inherited
+-- privilege explicitly. RLS policies can still invoke already-resolved
+-- private helper functions; browser roles cannot address the private schema
+-- through the Data API without schema USAGE.
+REVOKE ALL ON SCHEMA private FROM PUBLIC;
+REVOKE ALL ON SCHEMA private FROM anon, authenticated, service_role;
+
+-- Keep the administrative database owner able to work with the schema.
+GRANT USAGE ON SCHEMA private TO postgres;
+
+-- No anonymous direct invocation of private helpers.
+DO $do$
+DECLARE
+  r record;
+BEGIN
+  FOR r IN
+    SELECT p.oid
+    FROM pg_catalog.pg_proc p
+    JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'private'
+  LOOP
+    EXECUTE format(
+      'REVOKE EXECUTE ON FUNCTION %s FROM PUBLIC, anon',
+      r.oid::regprocedure
+    );
+  END LOOP;
+END
+$do$;
 
 DO $do$
 DECLARE
@@ -84,9 +118,9 @@ BEGIN
 
   -- 5. Private helper boundary.
   --
-  -- RLS helpers are intentionally callable by authenticated because policies
-  -- invoke them. What must be impossible is direct anonymous invocation and
-  -- direct access through the private schema by Data API roles.
+  -- Authenticated EXECUTE is intentionally retained for RLS evaluation. What
+  -- must be impossible is direct anonymous execution and schema access by the
+  -- Data API roles.
   SELECT count(*) INTO v_count
   FROM pg_catalog.pg_proc p
   JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
@@ -97,8 +131,6 @@ BEGIN
     RAISE EXCEPTION 'Security verification failed: % private function(s) remain directly executable by anon', v_count;
   END IF;
 
-  -- The private schema itself must not be usable by browser roles. This is the
-  -- important control that prevents direct SQL/RPC access to private helpers.
   IF pg_catalog.has_schema_privilege('anon', 'private', 'USAGE') THEN
     RAISE EXCEPTION 'Security verification failed: anon retains USAGE on private schema';
   END IF;
