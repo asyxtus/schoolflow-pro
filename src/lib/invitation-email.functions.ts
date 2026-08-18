@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getUserSchoolId } from "./school-context";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export const sendInvitationEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -45,6 +44,9 @@ export const sendInvitationEmail = createServerFn({ method: "POST" })
 
     const redirectTo = `${appUrl}/accept-invite?token=${encodeURIComponent(invitation.token)}`;
 
+    // Keep the service-role client out of the browser/server-function module
+    // bundle. This matches the existing security pattern in admin.functions.ts.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       invitation.email,
       { redirectTo },
