@@ -36,6 +36,7 @@ import {
   MANAGEABLE_ROLES,
   type AppRole,
 } from "@/lib/admin.functions";
+import { sendInvitationEmail } from "@/lib/invitation-email.functions";
 
 export const Route = createFileRoute("/_authenticated/settings/users")({
   component: UsersPage,
@@ -61,6 +62,7 @@ function UsersPage() {
   const fetchStaff = useServerFn(listStaff);
   const fetchInv = useServerFn(listInvitations);
   const createInv = useServerFn(createInvitation);
+  const sendInvEmail = useServerFn(sendInvitationEmail);
   const revoke = useServerFn(revokeInvitation);
   const setRole = useServerFn(updateStaffRole);
   const removeFn = useServerFn(removeStaff);
@@ -72,11 +74,13 @@ function UsersPage() {
   const [role, setRoleValue] = useState<AppRole>("teacher");
 
   const inviteMut = useMutation({
-    mutationFn: () => createInv({ data: { email, role } }),
-    onSuccess: async (r) => {
-      const url = `${window.location.origin}/accept-invite?token=${r.token}`;
-      await navigator.clipboard.writeText(url).catch(() => {});
-      toast.success("Invitation created — link copied to clipboard");
+    mutationFn: async () => {
+      const invitation = await createInv({ data: { email, role } });
+      await sendInvEmail({ data: { invitationId: invitation.id } });
+      return invitation;
+    },
+    onSuccess: async () => {
+      toast.success("Invitation sent by email");
       setEmail("");
       qc.invalidateQueries({ queryKey: ["invitations"] });
     },
@@ -116,7 +120,6 @@ function UsersPage() {
     inviteMut.mutate();
   };
 
-  // Group role rows by user
   const grouped = new Map<
     string,
     {
@@ -194,7 +197,7 @@ function UsersPage() {
             </div>
             <div className="flex items-end">
               <Button type="submit" disabled={inviteMut.isPending}>
-                {inviteMut.isPending ? "Creating…" : "Send invite"}
+                {inviteMut.isPending ? "Sending…" : "Send invite"}
               </Button>
             </div>
           </CardContent>
