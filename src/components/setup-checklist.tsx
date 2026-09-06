@@ -1,15 +1,18 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Check, CircleCheck, GraduationCap, Settings2, Users, WalletCards } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, CircleCheck, GraduationCap, Settings2, Users, WalletCards } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getOnboardingStatus } from "@/lib/onboarding.functions";
 
-const STORAGE_KEY = "schoolflow.setup-checklist.v1";
+const HIDDEN_KEY = "schoolflow.setup-checklist.hidden.v1";
 
 type Step = {
-  id: string;
+  id: "school" | "team" | "classes" | "students" | "finance";
   title: string;
   description: string;
   to: string;
@@ -39,7 +42,7 @@ const steps: Step[] = [
     icon: GraduationCap,
   },
   {
-    id: "admissions",
+    id: "students",
     title: "Add your first students",
     description: "Start with admissions or add your existing student records.",
     to: "/admissions/new",
@@ -48,38 +51,33 @@ const steps: Step[] = [
   {
     id: "finance",
     title: "Set up fees",
-    description: "Create fee structures before recording payments and balances.",
+    description: "Create fee assignments before recording payments and balances.",
     to: "/finance",
     icon: WalletCards,
   },
 ];
 
 export function SetupChecklist() {
-  const [completed, setCompleted] = useState<string[]>([]);
-  const [hidden, setHidden] = useState(false);
+  const fetchStatus = useServerFn(getOnboardingStatus);
+  const { data, isLoading } = useQuery({
+    queryKey: ["onboarding-status"],
+    queryFn: () => fetchStatus(),
+    staleTime: 15_000,
+    refetchInterval: 60_000,
+  });
 
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (Array.isArray(saved)) setCompleted(saved);
-      if (saved === "hidden") setHidden(true);
-    } catch {
-      // Ignore malformed local storage and show the checklist.
-    }
+  const hidden = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(HIDDEN_KEY) === "1";
   }, []);
 
-  const toggle = (id: string) => {
-    setCompleted((current) => {
-      const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
-  };
+  if (isLoading || !data || hidden) return null;
 
+  const completed = steps.filter((step) => data[step.id].complete).map((step) => step.id);
   const progress = Math.round((completed.length / steps.length) * 100);
-  const nextStep = steps.find((step) => !completed.includes(step.id));
+  const nextStep = steps.find((step) => !data[step.id].complete);
 
-  if (hidden || completed.length === steps.length) return null;
+  if (!nextStep) return null;
 
   return (
     <Card className="mb-6 border-primary/20 bg-primary/[0.03]">
@@ -91,46 +89,38 @@ export function SetupChecklist() {
               <Badge variant="secondary">{progress}% complete</Badge>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              Follow these steps once and SchoolFlow will be ready for day-to-day operations.
+              SchoolFlow automatically tracks your setup. Complete each step and it will check itself off.
             </p>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => {
-              localStorage.setItem(STORAGE_KEY, "hidden");
-              setHidden(true);
+              localStorage.setItem(HIDDEN_KEY, "1");
+              window.location.reload();
             }}
           >
-            Skip for now
+            Hide for now
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
         {steps.map((step, index) => {
-          const done = completed.includes(step.id);
+          const status = data[step.id];
+          const done = status.complete;
           const Icon = step.icon;
           return (
             <div
               key={step.id}
-              className={`flex items-center gap-3 rounded-lg border p-3 transition ${
-                done ? "bg-muted/40" : "bg-card"
-              }`}
+              className={`flex items-center gap-3 rounded-lg border p-3 transition ${done ? "bg-muted/40" : "bg-card"}`}
             >
-              <button
-                type="button"
-                aria-label={done ? `Mark step ${index + 1} incomplete` : `Mark step ${index + 1} complete`}
-                onClick={() => toggle(step.id)}
-                className="shrink-0 rounded-full"
-              >
-                {done ? (
-                  <CircleCheck className="h-5 w-5 text-primary" />
-                ) : (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full border text-[10px] text-muted-foreground">
-                    {index + 1}
-                  </span>
-                )}
-              </button>
+              {done ? (
+                <CircleCheck className="h-5 w-5 shrink-0 text-primary" />
+              ) : (
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] text-muted-foreground">
+                  {index + 1}
+                </span>
+              )}
               <div className="rounded-md bg-primary/10 p-2 text-primary">
                 <Icon className="h-4 w-4" />
               </div>
@@ -138,17 +128,16 @@ export function SetupChecklist() {
                 <p className={`text-sm font-medium ${done ? "line-through text-muted-foreground" : ""}`}>
                   {step.title}
                 </p>
-                <p className="text-xs text-muted-foreground">{step.description}</p>
+                <p className="text-xs text-muted-foreground">{done ? status.detail : step.description}</p>
               </div>
               {!done && (
-                <Button size="sm" variant={nextStep?.id === step.id ? "default" : "outline"} asChild>
+                <Button size="sm" variant={nextStep.id === step.id ? "default" : "outline"} asChild>
                   <Link to={step.to}>
-                    {nextStep?.id === step.id ? "Start" : "Open"}
+                    {nextStep.id === step.id ? "Start" : "Open"}
                     <ArrowRight className="ml-1 h-3.5 w-3.5" />
                   </Link>
                 </Button>
               )}
-              {done && <Check className="h-4 w-4 text-primary" />}
             </div>
           );
         })}
