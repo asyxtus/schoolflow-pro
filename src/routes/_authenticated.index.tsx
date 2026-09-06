@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
+import { SetupChecklist } from "@/components/setup-checklist";
 import { StatCard } from "@/components/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,8 @@ function DashboardPage() {
           </>
         }
       />
+
+      <SetupChecklist />
 
       {stats.alerts.length > 0 && (
         <Card className="mb-6 border-l-4 border-l-amber-500">
