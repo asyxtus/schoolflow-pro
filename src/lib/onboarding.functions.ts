@@ -60,12 +60,51 @@ export const completeOnboarding = createServerFn({ method: "POST" })
     return { schoolId: school.id, alreadyOnboarded: false };
   });
 
+export type OnboardingRole =
+  | "super_admin"
+  | "diocese_admin"
+  | "principal"
+  | "vice_principal"
+  | "bursar"
+  | "teacher"
+  | "secretary"
+  | "parent"
+  | "student"
+  | "discipline_master"
+  | "sports_master"
+  | "dean_of_studies"
+  | "counsellor"
+  | "boarding_master"
+  | "receptionist"
+  | "nurse";
+
 export type OnboardingStatus = {
+  role: OnboardingRole;
+  roleLabel: string;
   school: { complete: boolean; detail: string };
   team: { complete: boolean; detail: string; count: number };
   classes: { complete: boolean; detail: string; count: number };
   students: { complete: boolean; detail: string; count: number };
   finance: { complete: boolean; detail: string; count: number };
+};
+
+const ROLE_LABELS: Record<OnboardingRole, string> = {
+  super_admin: "Super administrator",
+  diocese_admin: "Diocese administrator",
+  principal: "Principal",
+  vice_principal: "Vice principal",
+  bursar: "Bursar",
+  teacher: "Teacher",
+  secretary: "Secretary",
+  parent: "Parent",
+  student: "Student",
+  discipline_master: "Discipline master",
+  sports_master: "Sports master",
+  dean_of_studies: "Dean of studies",
+  counsellor: "Counsellor",
+  boarding_master: "Boarding master",
+  receptionist: "Receptionist",
+  nurse: "Nurse",
 };
 
 /** Reads live database state so onboarding stays correct across devices. */
@@ -83,16 +122,13 @@ export const getOnboardingStatus = createServerFn({ method: "GET" })
     const schoolId = profile?.school_id;
     if (!schoolId) throw new Error("No school assigned to this account");
 
-    const [schoolRes, teamRes, classesRes, studentsRes, feesRes] = await Promise.all([
-      supabase
-        .from("schools")
-        .select("name, code, city, region, current_academic_year")
-        .eq("id", schoolId)
-        .maybeSingle(),
+    const [schoolRes, teamRes, classesRes, studentsRes, feesRes, rolesRes] = await Promise.all([
+      supabase.from("schools").select("name, code, city, region, current_academic_year").eq("id", schoolId).maybeSingle(),
       supabase.from("user_roles").select("user_id", { count: "exact", head: true }).eq("school_id", schoolId),
       supabase.from("classes").select("id", { count: "exact", head: true }).eq("school_id", schoolId),
       supabase.from("students").select("id", { count: "exact", head: true }).eq("school_id", schoolId),
       supabase.from("student_fees").select("id", { count: "exact", head: true }).eq("school_id", schoolId),
+      supabase.from("user_roles").select("role").eq("user_id", userId).eq("school_id", schoolId),
     ]);
 
     if (schoolRes.error) throw schoolRes.error;
@@ -100,6 +136,7 @@ export const getOnboardingStatus = createServerFn({ method: "GET" })
     if (classesRes.error) throw classesRes.error;
     if (studentsRes.error) throw studentsRes.error;
     if (feesRes.error) throw feesRes.error;
+    if (rolesRes.error) throw rolesRes.error;
 
     const school = schoolRes.data;
     const teamCount = teamRes.count ?? 0;
@@ -113,7 +150,17 @@ export const getOnboardingStatus = createServerFn({ method: "GET" })
         (school?.city?.trim() || school?.region?.trim() || school?.current_academic_year?.trim()),
     );
 
+    const rolePriority: OnboardingRole[] = [
+      "super_admin", "diocese_admin", "principal", "vice_principal", "bursar", "dean_of_studies",
+      "secretary", "receptionist", "teacher", "discipline_master", "boarding_master", "sports_master",
+      "nurse", "counsellor", "student", "parent",
+    ];
+    const assignedRoles = (rolesRes.data ?? []).map((r) => r.role as OnboardingRole);
+    const role = rolePriority.find((candidate) => assignedRoles.includes(candidate)) ?? "principal";
+
     return {
+      role,
+      roleLabel: ROLE_LABELS[role],
       school: {
         complete: schoolComplete,
         detail: schoolComplete ? "School profile is configured" : "Add the school details",
